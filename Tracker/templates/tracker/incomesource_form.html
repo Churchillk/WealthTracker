@@ -1,0 +1,644 @@
+{% extends 'tracker/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Income Source{% endblock %}
+{% block header_title %}{% if form.instance.pk %}Edit Income Source{% else %}Add New Income Source {% endif %} {% endblock %}</h3>
+{% block header_subtitle %}{% if form.instance.pk %}Update income source details{% else %}Create a new revenue stream{% endif %}</p>{% endblock %}
+
+{% block extra_css %}
+<style>
+    .source-type-option {
+        transition: all 0.3s ease;
+    }
+
+    .source-type-option:hover {
+        transform: translateY(-2px);
+    }
+
+    .timeline-track {
+        background: linear-gradient(90deg, #10b981 0%, #8b5cf6 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Stats Banner -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-chart-line text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Total Portfolio</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">${{ total_portfolio|default:"0"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-violet-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-users text-violet-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Active Clients</p>
+                    <h3 class="text-2xl font-bold text-violet-400">{{ client_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-stream text-amber-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Avg. Value</p>
+                    <h3 class="text-2xl font-bold text-amber-400">${{ avg_value|default:"0"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column - Form -->
+        <div class="lg:col-span-2">
+            <div class="card rounded-xl p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-hand-holding-usd text-emerald-400 mr-2"></i>
+                            {% if form.instance.pk %}Edit Income Source{% else %}Create Income Source{% endif %}
+                        </h3>
+                        <p class="text-slate-400 text-sm mt-1">
+                            {% if form.instance.pk %}
+                            Last updated: {{ form.instance.start_date|date:"M d, Y" }}
+                            {% else %}
+                            Define a new revenue stream for your portfolio
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                            <i class="fas fa-shield-alt mr-1"></i> Revenue Stream
+                        </span>
+                    </div>
+                </div>
+
+                <form method="post" class="space-y-8" id="incomeSourceForm">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                            <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                        </div>
+                        <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Section 1: Basic Information -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-info-circle text-emerald-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Basic Information</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Name Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-tag mr-2"></i>Source Name
+                                </label>
+                                {% render_field form.name class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="e.g., Consulting, Product Sales, Investments" %}
+                                <p class="text-xs text-slate-500">Give your income source a clear name</p>
+                            </div>
+
+                            <!-- Client Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-user-tie mr-2"></i>Client/Company
+                                </label>
+                                {% render_field form.client class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Client name or company" %}
+                                <p class="text-xs text-slate-500">Who is paying for this service?</p>
+                            </div>
+
+                            <!-- Worth Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-money-bill-wave mr-2"></i>Estimated Worth
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
+                                    {% render_field form.worth class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="0.00" id="worthInput" %}
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs text-slate-500">Total estimated value of this source</p>
+                                    <span id="worthWords" class="text-xs text-emerald-400"></span>
+                                </div>
+                            </div>
+
+                            <!-- Source Type -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-layer-group mr-2"></i>Source Type
+                                </label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button type="button" onclick="setSourceType('Consulting')" class="source-type-option p-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
+                                        <i class="fas fa-comments-dollar text-blue-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">Consulting</p>
+                                    </button>
+                                    <button type="button" onclick="setSourceType('Product')" class="source-type-option p-4 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
+                                        <i class="fas fa-box text-emerald-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">Product</p>
+                                    </button>
+                                    <button type="button" onclick="setSourceType('Service')" class="source-type-option p-4 bg-violet-900/20 hover:bg-violet-900/30 border border-violet-800/30 rounded-lg text-center">
+                                        <i class="fas fa-concierge-bell text-violet-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">Service</p>
+                                    </button>
+                                    <button type="button" onclick="setSourceType('Investment')" class="source-type-option p-4 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center">
+                                        <i class="fas fa-chart-line text-amber-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">Investment</p>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="sourceTypeInput" name="source_type" value="{{ form.instance.source_type|default:'Service' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Timeline -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-calendar-alt text-blue-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Timeline</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Start Date Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-play-circle mr-2"></i>Start Date
+                                </label>
+                                {% render_field form.start_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                <p class="text-xs text-slate-500">When does this income source begin?</p>
+                            </div>
+
+                            <!-- End Date Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-flag-checkered mr-2"></i>End Date
+                                </label>
+                                {% render_field form.end_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                <p class="text-xs text-slate-500">Expected end date of this income stream</p>
+                            </div>
+                        </div>
+
+                        <!-- Timeline Preview -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-slate-400">Duration</span>
+                                <span id="durationValue" class="text-sm text-emerald-400">-</span>
+                            </div>
+                            <div class="relative h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div id="timelinePreview" class="timeline-track h-2 rounded-full absolute left-0" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-500 mt-2">
+                                <span id="startDatePreview">-</span>
+                                <span id="endDatePreview">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Additional Details -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-file-alt text-violet-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Additional Details</h4>
+                        </div>
+
+                        <!-- Description Field -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-align-left mr-2"></i>Description
+                            </label>
+                            {% render_field form.description class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="4" placeholder="Describe this income source, terms, conditions, or any important details..." %}
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs text-slate-500">Optional: Add detailed information about this income source</p>
+                                <span id="descCharCount" class="text-xs text-slate-500">0/1000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold">Quick Actions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setWorth(10000)">
+                                <i class="fas fa-money-bill-wave text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">$10K Worth</p>
+                                <p class="text-xs text-slate-400">Set value</p>
+                            </button>
+
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setOneYearDuration()">
+                                <i class="fas fa-calendar-alt text-violet-400 text-lg mb-2"></i>
+                                <p class="font-medium">1 Year Contract</p>
+                                <p class="text-xs text-slate-400">Set timeline</p>
+                            </button>
+
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
+                                <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
+                                <p class="font-medium">Clear Form</p>
+                                <p class="text-xs text-slate-400">Reset all fields</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="pt-6 border-t border-slate-800">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                <label for="addAnother" class="text-sm text-slate-400">Add another source after saving</label>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <a href="{% url 'incomesource-list' %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                <button type="submit"
+                                        class="btn-primary px-8 py-3 flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if form.instance.pk %}Update Source{% else %}Create Source{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="space-y-6">
+            <!-- Portfolio Impact -->
+            <div class="preview-card card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-chart-pie mr-2"></i>Portfolio Impact
+                </h4>
+                <div class="space-y-4" id="portfolioImpact">
+                    <div class="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg">
+                        <span class="text-slate-400">Current Portfolio:</span>
+                        <span class="text-xl font-bold text-emerald-400">${{ total_portfolio|default:"0"|floatformat:2 }}</span>
+                    </div>
+                    <div class="p-3 bg-slate-800/30 rounded-lg">
+                        <p class="text-xs text-slate-400 mb-1">With This Source:</p>
+                        <p class="text-2xl font-bold text-emerald-400" id="newPortfolioValue">${{ total_portfolio|default:"0"|floatformat:2 }}</p>
+                    </div>
+                    <div class="p-3 bg-slate-800/30 rounded-lg">
+                        <p class="text-xs text-slate-400 mb-1">Portfolio Growth:</p>
+                        <p class="text-lg font-bold text-emerald-400" id="portfolioGrowth">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source Types Guide -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-stream mr-2"></i>Source Types
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex items-center p-3 bg-blue-900/10 rounded-lg">
+                        <div class="w-8 h-8 bg-blue-900/30 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-comments-dollar text-blue-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm">Consulting</p>
+                            <p class="text-xs text-slate-400">Expert advice services</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 bg-emerald-900/10 rounded-lg">
+                        <div class="w-8 h-8 bg-emerald-900/30 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-box text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm">Product Sales</p>
+                            <p class="text-xs text-slate-400">Physical or digital products</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 bg-violet-900/10 rounded-lg">
+                        <div class="w-8 h-8 bg-violet-900/30 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-concierge-bell text-violet-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm">Service</p>
+                            <p class="text-xs text-slate-400">Ongoing service delivery</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 bg-amber-900/10 rounded-lg">
+                        <div class="w-8 h-8 bg-amber-900/30 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-chart-line text-amber-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm">Investment</p>
+                            <p class="text-xs text-slate-400">Passive income streams</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-lightbulb mr-2"></i>Best Practices
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium">Be Specific</p>
+                            <p class="text-xs text-slate-400">Clear naming helps tracking</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium">Realistic Valuation</p>
+                            <p class="text-xs text-slate-400">Base worth on actual data</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium">Regular Updates</p>
+                            <p class="text-xs text-slate-400">Update as terms change</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Sources -->
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold">
+                        <i class="fas fa-history mr-2"></i>Recent Sources
+                    </h4>
+                    <span class="text-xs text-emerald-400">{{ recent_count }} total</span>
+                </div>
+                <div class="space-y-3">
+                    {% for source in recent_sources|slice:":3" %}
+                    <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-sm">{{ source.name }}</p>
+                            <p class="text-xs text-slate-400">{{ source.client|truncatechars:15 }}</p>
+                        </div>
+                        <span class="font-bold text-emerald-400">${{ source.worth }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-slate-400 text-center py-4 text-sm">No recent sources</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const worthInput = document.getElementById('worthInput');
+    const descTextarea = document.querySelector('textarea[name="description"]');
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    const descCharCount = document.getElementById('descCharCount');
+
+    // Convert number to words for worth
+    function numberToWords(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + ' Million';
+        if (num >= 1000) return (num / 1000).toFixed(1) + ' Thousand';
+        return num.toString();
+    }
+
+    // Update worth preview
+    worthInput.addEventListener('input', function() {
+        const value = this.value || '0';
+        const numValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+
+        // Update worth in words
+        const worthWords = document.getElementById('worthWords');
+        if (numValue > 0) {
+            worthWords.textContent = numberToWords(numValue) + ' Dollars';
+        } else {
+            worthWords.textContent = '';
+        }
+
+        // Update portfolio impact
+        const currentPortfolio = {{ total_portfolio|default:"0" }};
+        const newPortfolio = currentPortfolio + numValue;
+        const growth = currentPortfolio > 0 ? ((numValue / currentPortfolio) * 100).toFixed(1) : '100.0';
+
+        document.getElementById('newPortfolioValue').textContent = '$' + newPortfolio.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        document.getElementById('portfolioGrowth').textContent = '+' + growth + '%';
+    });
+
+    // Timeline preview
+    function updateTimelinePreview() {
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            // Calculate duration in days
+            const durationMs = end - start;
+            const durationDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
+
+            // Update duration display
+            if (durationDays < 30) {
+                document.getElementById('durationValue').textContent = durationDays + ' days';
+            } else if (durationDays < 365) {
+                const months = Math.floor(durationDays / 30);
+                document.getElementById('durationValue').textContent = months + ' month' + (months > 1 ? 's' : '');
+            } else {
+                const years = (durationDays / 365).toFixed(1);
+                document.getElementById('durationValue').textContent = years + ' year' + (years > 1 ? 's' : '');
+            }
+
+            // Update date displays
+            document.getElementById('startDatePreview').textContent = start.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            document.getElementById('endDatePreview').textContent = end.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+
+            // Update progress bar (simplified - always full for source timeline)
+            document.getElementById('timelinePreview').style.width = '100%';
+        }
+    }
+
+    startDateInput.addEventListener('change', updateTimelinePreview);
+    endDateInput.addEventListener('change', updateTimelinePreview);
+
+    // Character count for description
+    if (descTextarea) {
+        descTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            descCharCount.textContent = length + '/1000';
+            if (length > 900) {
+                descCharCount.classList.remove('text-slate-500');
+                descCharCount.classList.add('text-amber-400');
+            } else if (length > 980) {
+                descCharCount.classList.remove('text-amber-400');
+                descCharCount.classList.add('text-rose-400');
+            } else {
+                descCharCount.classList.remove('text-amber-400', 'text-rose-400');
+                descCharCount.classList.add('text-slate-500');
+            }
+        });
+
+        // Trigger initial count
+        descTextarea.dispatchEvent(new Event('input'));
+    }
+
+    // Trigger initial updates
+    worthInput.dispatchEvent(new Event('input'));
+    updateTimelinePreview();
+});
+
+function setSourceType(type) {
+    const nameInput = document.querySelector('input[name="name"]');
+    const currentValue = nameInput.value.toLowerCase();
+
+    // Remove existing type from name if present
+    const types = ['consulting', 'product', 'service', 'investment'];
+    let cleanName = currentValue;
+    types.forEach(t => {
+        cleanName = cleanName.replace(t, '').replace('sales', '').trim();
+    });
+
+    // Add new type
+    nameInput.value = (cleanName ? cleanName + ' ' : '') + type;
+    document.getElementById('sourceTypeInput').value = type;
+
+    // Visual feedback
+    document.querySelectorAll('.source-type-option').forEach(opt => {
+        opt.classList.remove('ring-2', 'ring-emerald-500');
+    });
+    event.currentTarget.classList.add('ring-2', 'ring-emerald-500');
+}
+
+function setWorth(amount) {
+    const worthInput = document.getElementById('worthInput');
+    worthInput.value = amount;
+    worthInput.dispatchEvent(new Event('input'));
+}
+
+function setOneYearDuration() {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 16);
+    const oneYearLater = new Date(now.setFullYear(now.getFullYear() + 1));
+    const oneYearLaterStr = oneYearLater.toISOString().slice(0, 16);
+
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+
+    startDateInput.value = today;
+    endDateInput.value = oneYearLaterStr;
+
+    startDateInput.dispatchEvent(new Event('change'));
+    endDateInput.dispatchEvent(new Event('change'));
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear all form fields?')) {
+        document.getElementById('incomeSourceForm').reset();
+        document.getElementById('sourceTypeInput').value = 'Service';
+        document.getElementById('worthWords').textContent = '';
+        document.getElementById('descCharCount').textContent = '0/1000';
+        document.getElementById('durationValue').textContent = '-';
+        document.getElementById('timelinePreview').style.width = '0%';
+        document.getElementById('startDatePreview').textContent = '-';
+        document.getElementById('endDatePreview').textContent = '-';
+        document.getElementById('newPortfolioValue').textContent = '${{ total_portfolio|default:"0"|floatformat:2 }}';
+        document.getElementById('portfolioGrowth').textContent = '0%';
+
+        // Reset source type buttons
+        document.querySelectorAll('.source-type-option').forEach(opt => {
+            opt.classList.remove('ring-2', 'ring-emerald-500');
+        });
+    }
+}
+
+// Form validation
+document.getElementById('incomeSourceForm').addEventListener('submit', function(e) {
+    const nameInput = document.querySelector('input[name="name"]');
+    const clientInput = document.querySelector('input[name="client"]');
+    const worthInput = document.getElementById('worthInput');
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+
+    if (!nameInput.value.trim()) {
+        e.preventDefault();
+        alert('Please enter a source name.');
+        nameInput.focus();
+        return false;
+    }
+
+    if (!clientInput.value.trim()) {
+        e.preventDefault();
+        alert('Please enter a client name.');
+        clientInput.focus();
+        return false;
+    }
+
+    const worth = parseFloat(worthInput.value);
+    if (isNaN(worth) || worth <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid worth greater than 0.');
+        worthInput.focus();
+        return false;
+    }
+
+    if (startDateInput.value && endDateInput.value) {
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+
+        if (end <= start) {
+            e.preventDefault();
+            alert('End date must be after start date.');
+            endDateInput.focus();
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}

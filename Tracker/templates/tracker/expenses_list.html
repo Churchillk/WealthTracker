@@ -1,0 +1,228 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Expenses - Wealth Management{% endblock %}
+{% block header_title %}Expenses Management{% endblock %}
+{% block header_subtitle %}Track and manage your expenses{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Add Button -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold">All Expense Records</h2>
+            <p class="text-slate-400">Monitor your spending and optimize costs</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <input type="text"
+                       placeholder="Search expenses..."
+                       class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pl-10 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+            </div>
+            <a href="{% url 'expenses-create' %}" class="btn-primary">
+                <i class="fas fa-plus mr-2"></i> Add Expense
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-rose-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-money-bill-wave text-rose-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Total Expenses</p>
+                    <h3 class="text-2xl font-bold text-rose-400">${{ total_expenses|default:"0"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-violet-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-calendar-alt text-violet-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">This Month</p>
+                    <h3 class="text-2xl font-bold text-violet-400">${{ month_expenses|default:"0"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-chart-line text-amber-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Avg/Month</p>
+                    <h3 class="text-2xl font-bold text-amber-400">${{ avg_expenses|default:"0"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-bullseye text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Budget</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">${{ budget|default:"2000"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-6 rounded-xl">
+        <div class="flex flex-wrap items-center gap-4">
+            <span class="text-slate-400">Filter by:</span>
+            <select class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option>All Categories</option>
+                <option>Business</option>
+                <option>Personal</option>
+                <option>Investment</option>
+                <option>Other</option>
+            </select>
+            <input type="date" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <input type="date" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">
+                Apply Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Expenses Table -->
+    <div class="card rounded-xl overflow-hidden">
+        <div class="table-container">
+            <table class="w-full">
+                <thead class="table-header">
+                    <tr>
+                        <th class="py-4 px-6 text-left">
+                            <input type="checkbox" class="rounded bg-slate-700">
+                        </th>
+                        <th class="py-4 px-6 text-left">Date</th>
+                        <th class="py-4 px-6 text-left">Expense Name</th>
+                        <th class="py-4 px-6 text-left">Category</th>
+                        <th class="py-4 px-6 text-left">Amount</th>
+                        <th class="py-4 px-6 text-left">Description</th>
+                        <th class="py-4 px-6 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for expense in expenses %}
+                    <tr class="table-row">
+                        <td class="py-4 px-6">
+                            <input type="checkbox" class="rounded bg-slate-700">
+                        </td>
+                        <td class="py-4 px-6">{{ expense.date|date:"M d, Y" }}</td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-rose-900/30 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-receipt text-rose-400 text-sm"></i>
+                                </div>
+                                {{ expense.name }}
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">
+                            {% with category=expense.name|lower %}
+                            <span class="px-3 py-1 {% if 'business' in category %}bg-blue-900/30 text-blue-400{% elif 'personal' in category %}bg-purple-900/30 text-purple-400{% elif 'investment' in category %}bg-emerald-900/30 text-emerald-400{% else %}bg-slate-800 text-slate-400{% endif %} rounded-full text-sm">
+                                {% if 'business' in category %}Business
+                                {% elif 'personal' in category %}Personal
+                                {% elif 'investment' in category %}Investment
+                                {% else %}Other{% endif %}
+                            </span>
+                            {% endwith %}
+                        </td>
+                        <td class="py-4 px-6">
+                            <span class="font-bold text-rose-400">${{ expense.worth }}</span>
+                        </td>
+                        <td class="py-4 px-6 text-slate-400">
+                            {{ expense.description|truncatechars:30|default:"-" }}
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'expenses-update' expense.pk %}"
+                                   class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-edit text-sm"></i>
+                                </a>
+                                <a href="{% url 'expenses-delete' expense.pk %}"
+                                   class="w-8 h-8 bg-rose-900/30 hover:bg-rose-900/50 rounded-full flex items-center justify-center text-rose-400 hover:text-rose-300">
+                                    <i class="fas fa-trash text-sm"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-12 px-6 text-center">
+                            <div class="max-w-md mx-auto">
+                                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-receipt text-3xl text-slate-600"></i>
+                                </div>
+                                <h3 class="text-xl font-bold mb-2">No Expenses Recorded</h3>
+                                <p class="text-slate-400 mb-6">Start tracking your expenses to optimize your spending</p>
+                                <a href="{% url 'expenses-create' %}" class="btn-primary inline-block">
+                                    <i class="fas fa-plus mr-2"></i> Add Your First Expense
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table Footer -->
+        <div class="p-6 border-t border-slate-800">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-slate-400">
+                    Showing {{ expenses|length }} expense{{ expenses|pluralize }}
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-slate-400">
+                        Selected <span class="font-medium text-emerald-400">0</span> items
+                    </div>
+                    <button class="px-4 py-2 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 rounded-lg text-sm">
+                        <i class="fas fa-trash mr-2"></i> Delete Selected
+                    </button>
+                    <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">
+                        <i class="fas fa-download mr-2"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all checkboxes
+    const selectAll = document.querySelector('thead input[type="checkbox"]');
+    const itemCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+    const selectedCount = document.querySelector('.text-emerald-400');
+
+    selectAll.addEventListener('change', function() {
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelectedCount();
+    });
+
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+
+    function updateSelectedCount() {
+        const selected = Array.from(itemCheckboxes).filter(cb => cb.checked).length;
+        selectedCount.textContent = selected;
+    }
+});
+</script>
+{% endblock %}

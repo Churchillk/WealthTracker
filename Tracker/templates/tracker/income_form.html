@@ -1,0 +1,584 @@
+{% extends 'tracker/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Income{% endblock %}
+{% block header_title %}{% if form.instance.pk %}Edit Income{% else %}Add New Income{% endif %}{% endblock %}
+{% block header_subtitle %}{% if form.instance.pk %}Update income details{% else %}Record new income{% endif %}</p>{% endblock %}
+
+{% block extra_css %}
+<style>
+    .wallet-icon {
+        transition: all 0.3s ease;
+    }
+
+    .wallet-option:hover .wallet-icon {
+        transform: scale(1.1);
+    }
+
+    .preview-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .quick-action-btn {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .quick-action-btn:hover {
+        background: rgba(51, 65, 85, 0.7);
+        border-color: rgba(16, 185, 129, 0.3);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Stats Banner -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-chart-line text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Monthly Average</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">${{ monthly_avg|default:"0"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-violet-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-calendar-alt text-violet-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">This Month</p>
+                    <h3 class="text-2xl font-bold text-violet-400">${{ month_total|default:"0"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-bullseye text-amber-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Income Goal</p>
+                    <h3 class="text-2xl font-bold text-amber-400">${{ income_goal|default:"5000"|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column - Form -->
+        <div class="lg:col-span-2">
+            <div class="card rounded-xl p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-money-bill-wave text-emerald-400 mr-2"></i>
+                            {% if form.instance.pk %}Edit Income Record{% else %}Record New Income{% endif %}
+                        </h3>
+                        <p class="text-slate-400 text-sm mt-1">
+                            {% if form.instance.pk %}
+                            Last updated: {{ form.instance.date|date:"M d, Y" }}
+                            {% else %}
+                            Fill in the details below to record your income
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                            <i class="fas fa-shield-alt mr-1"></i> Secure
+                        </span>
+                    </div>
+                </div>
+
+                <form method="post" class="space-y-8" id="incomeForm">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                            <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                        </div>
+                        <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Section 1: Basic Information -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-info-circle text-emerald-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Basic Information</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Source Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-hand-holding-usd mr-2"></i>Income Source
+                                </label>
+                                <div class="relative">
+                                    {% render_field form.source class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-chevron-down text-slate-500"></i>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500">Select where this income came from</p>
+                            </div>
+
+                            <!-- Wallet Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-wallet mr-2"></i>Destination Wallet
+                                </label>
+                                <div class="relative">
+                                    {% render_field form.wallet class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-chevron-down text-slate-500"></i>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500">Where is this income being stored?</p>
+                            </div>
+
+                            <!-- Amount Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-money-bill-wave mr-2"></i>Amount Received
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
+                                    {% render_field form.amount class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="0.00" id="amountInput" %}
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs text-slate-500">Enter the exact amount received</p>
+                                    <span id="amountWords" class="text-xs text-emerald-400"></span>
+                                </div>
+                            </div>
+
+                            <!-- Date Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Transaction Date
+                                </label>
+                                {% render_field form.date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                <p class="text-xs text-slate-500">When did you receive this income?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Additional Details -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-file-alt text-violet-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Additional Details</h4>
+                        </div>
+
+                        <!-- Description Field -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-sticky-note mr-2"></i>Description & Notes
+                            </label>
+                            {% render_field form.description class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="4" placeholder="Add any notes about this income transaction..." %}
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs text-slate-500">Optional: Add details about this transaction</p>
+                                <span id="charCount" class="text-xs text-slate-500">0/500</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold">Quick Actions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setAmount(100)">
+                                <i class="fas fa-plus text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">Add $100</p>
+                                <p class="text-xs text-slate-400">Quick add</p>
+                            </button>
+
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setTodayDate()">
+                                <i class="fas fa-calendar-day text-violet-400 text-lg mb-2"></i>
+                                <p class="font-medium">Today's Date</p>
+                                <p class="text-xs text-slate-400">Set to current</p>
+                            </button>
+
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
+                                <i class="fas fa-eraser text-rose-400 text-lg mb-2"></i>
+                                <p class="font-medium">Clear Form</p>
+                                <p class="text-xs text-slate-400">Reset all fields</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="pt-6 border-t border-slate-800">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                <label for="addAnother" class="text-sm text-slate-400">Add another income after saving</label>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <a href="{% url 'income-list' %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                <button type="submit"
+                                        class="btn-primary px-8 py-3 flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if form.instance.pk %}Update Income{% else %}Record Income{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="space-y-6">
+            <!-- Preview Card -->
+            <div class="preview-card card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-eye mr-2"></i>Income Preview
+                </h4>
+                <div class="space-y-4" id="incomePreview">
+                    <div class="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg">
+                        <span class="text-slate-400">Amount:</span>
+                        <span class="text-2xl font-bold text-emerald-400" id="previewAmount">$0.00</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-slate-800/30 rounded-lg">
+                            <p class="text-xs text-slate-400">Source</p>
+                            <p class="font-medium" id="previewSource">-</p>
+                        </div>
+                        <div class="p-3 bg-slate-800/30 rounded-lg">
+                            <p class="text-xs text-slate-400">Wallet</p>
+                            <p class="font-medium" id="previewWallet">-</p>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-slate-800/30 rounded-lg">
+                        <p class="text-xs text-slate-400">Date</p>
+                        <p class="font-medium" id="previewDate">-</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-700">
+                    <p class="text-sm text-slate-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Preview updates as you type
+                    </p>
+                </div>
+            </div>
+
+            <!-- Wallet Guide -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-university mr-2"></i>Wallet Guide
+                </h4>
+                <div class="space-y-3">
+                    {% for wallet_code, wallet_name in form.fields.wallet.choices %}
+                    {% if wallet_code %}
+                    <div class="wallet-option flex items-center p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer" onclick="selectWallet('{{ wallet_code }}')">
+                        <div class="w-10 h-10 {% if wallet_code == 'Bank' %}bg-blue-900/30{% elif wallet_code == 'Paypal' %}bg-blue-900/30{% elif wallet_code == 'Binance' %}bg-amber-900/30{% elif wallet_code == 'M-pesa' %}bg-emerald-900/30{% elif wallet_code == 'TrustWallet' %}bg-violet-900/30{% else %}bg-slate-700{% endif %} rounded-full flex items-center justify-center mr-3">
+                            <i class="fas {% if wallet_code == 'Bank' %}fa-university{% elif wallet_code == 'Paypal' %}fa-cc-paypal{% elif wallet_code == 'Binance' %}fa-chart-line{% elif wallet_code == 'M-pesa' %}fa-mobile-alt{% elif wallet_code == 'TrustWallet' %}fa-wallet{% else %}fa-money-bill-wave{% endif %} wallet-icon"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">{{ wallet_name }}</p>
+                            <p class="text-xs text-slate-400">
+                                {% if wallet_code == 'Bank' %}Traditional banking
+                                {% elif wallet_code == 'Paypal' %}Online payments
+                                {% elif wallet_code == 'Binance' %}Crypto exchange
+                                {% elif wallet_code == 'M-pesa' %}Mobile money
+                                {% elif wallet_code == 'TrustWallet' %}Crypto wallet
+                                {% else %}Other methods{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-lightbulb mr-2"></i>Quick Tips
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3 p-3 bg-emerald-900/10 rounded-lg">
+                        <i class="fas fa-check-circle text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="font-medium text-sm">Be Specific</p>
+                            <p class="text-xs text-slate-400">Use clear descriptions for better tracking</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3 p-3 bg-violet-900/10 rounded-lg">
+                        <i class="fas fa-clock text-violet-400 mt-1"></i>
+                        <div>
+                            <p class="font-medium text-sm">Record Immediately</p>
+                            <p class="text-xs text-slate-400">Enter income as soon as you receive it</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3 p-3 bg-amber-900/10 rounded-lg">
+                        <i class="fas fa-tags text-amber-400 mt-1"></i>
+                        <div>
+                            <p class="font-medium text-sm">Categorize Properly</p>
+                            <p class="text-xs text-slate-400">Use appropriate sources for analysis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Income -->
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold">
+                        <i class="fas fa-history mr-2"></i>Recent Income
+                    </h4>
+                    <span class="text-xs text-emerald-400">{{ recent_count }} records</span>
+                </div>
+                <div class="space-y-3">
+                    {% for income in recent_incomes|slice:":3" %}
+                    <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-sm">{{ income.source.name|default:"Direct" }}</p>
+                            <p class="text-xs text-slate-400">{{ income.date|date:"M d" }}</p>
+                        </div>
+                        <span class="font-bold text-emerald-400">${{ income.amount }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-slate-400 text-center py-4 text-sm">No recent income records</p>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'income-list' %}" class="mt-4 text-emerald-400 hover:text-emerald-300 text-sm font-medium flex items-center justify-center">
+                    View all income <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amountInput');
+    const descriptionTextarea = document.querySelector('textarea[name="description"]');
+    const charCount = document.getElementById('charCount');
+    const form = document.getElementById('incomeForm');
+
+    // Update preview elements
+    const previewAmount = document.getElementById('previewAmount');
+    const previewSource = document.getElementById('previewSource');
+    const previewWallet = document.getElementById('previewWallet');
+    const previewDate = document.getElementById('previewDate');
+
+    // Convert number to words (simple version)
+    function numberToWords(num) {
+        const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+        const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+        if (num === 0) return 'Zero Dollars';
+        if (num > 999999) return 'Large Amount';
+
+        let words = '';
+
+        // Handle thousands
+        if (num >= 1000) {
+            words += numberToWords(Math.floor(num / 1000)) + ' Thousand ';
+            num %= 1000;
+        }
+
+        // Handle hundreds
+        if (num >= 100) {
+            words += ones[Math.floor(num / 100)] + ' Hundred ';
+            num %= 100;
+        }
+
+        // Handle tens and ones
+        if (num >= 20) {
+            words += tens[Math.floor(num / 10)] + ' ';
+            num %= 10;
+        } else if (num >= 10) {
+            words += teens[num - 10] + ' ';
+            num = 0;
+        }
+
+        if (num > 0) {
+            words += ones[num] + ' ';
+        }
+
+        return words.trim() + ' Dollars';
+    }
+
+    // Update amount preview
+    amountInput.addEventListener('input', function() {
+        const value = this.value || '0';
+        const numValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+        previewAmount.textContent = '$' + numValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        // Update amount in words
+        const amountWords = document.getElementById('amountWords');
+        if (numValue > 0 && numValue < 1000000) {
+            amountWords.textContent = numberToWords(Math.floor(numValue));
+        } else {
+            amountWords.textContent = '';
+        }
+    });
+
+    // Update source preview
+    const sourceSelect = document.querySelector('select[name="source"]');
+    sourceSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        previewSource.textContent = selectedOption.text || '-';
+    });
+
+    // Update wallet preview
+    const walletSelect = document.querySelector('select[name="wallet"]');
+    walletSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        previewWallet.textContent = selectedOption.text || '-';
+    });
+
+    // Update date preview
+    const dateInput = document.querySelector('input[name="date"]');
+    dateInput.addEventListener('change', function() {
+        if (this.value) {
+            const date = new Date(this.value);
+            previewDate.textContent = date.toLocaleDateString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } else {
+            previewDate.textContent = '-';
+        }
+    });
+
+    // Character count for description
+    if (descriptionTextarea) {
+        descriptionTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = length + '/500';
+            if (length > 450) {
+                charCount.classList.remove('text-slate-500');
+                charCount.classList.add('text-amber-400');
+            } else if (length > 480) {
+                charCount.classList.remove('text-amber-400');
+                charCount.classList.add('text-rose-400');
+            } else {
+                charCount.classList.remove('text-amber-400', 'text-rose-400');
+                charCount.classList.add('text-slate-500');
+            }
+        });
+
+        // Trigger initial count
+        descriptionTextarea.dispatchEvent(new Event('input'));
+    }
+
+    // Set default values for preview on page load
+    amountInput.dispatchEvent(new Event('input'));
+    sourceSelect.dispatchEvent(new Event('change'));
+    walletSelect.dispatchEvent(new Event('change'));
+    if (dateInput.value) {
+        dateInput.dispatchEvent(new Event('change'));
+    }
+});
+
+// Quick action functions
+function setAmount(amount) {
+    const amountInput = document.getElementById('amountInput');
+    amountInput.value = amount;
+    amountInput.dispatchEvent(new Event('input'));
+}
+
+function setTodayDate() {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 16);
+    const dateInput = document.querySelector('input[name="date"]');
+    dateInput.value = today;
+    dateInput.dispatchEvent(new Event('change'));
+}
+
+function selectWallet(walletCode) {
+    const walletSelect = document.querySelector('select[name="wallet"]');
+    walletSelect.value = walletCode;
+    walletSelect.dispatchEvent(new Event('change'));
+
+    // Visual feedback
+    const options = document.querySelectorAll('.wallet-option');
+    options.forEach(opt => {
+        opt.classList.remove('border-emerald-500', 'border');
+    });
+    event.currentTarget.classList.add('border-emerald-500', 'border');
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear all form fields?')) {
+        document.getElementById('incomeForm').reset();
+        document.getElementById('previewAmount').textContent = '$0.00';
+        document.getElementById('previewSource').textContent = '-';
+        document.getElementById('previewWallet').textContent = '-';
+        document.getElementById('previewDate').textContent = '-';
+        document.getElementById('amountWords').textContent = '';
+        document.getElementById('charCount').textContent = '0/500';
+    }
+}
+
+// Form validation
+document.getElementById('incomeForm').addEventListener('submit', function(e) {
+    const amountInput = document.getElementById('amountInput');
+    const amount = parseFloat(amountInput.value);
+
+    if (isNaN(amount) || amount <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid amount greater than 0.');
+        amountInput.focus();
+        return false;
+    }
+
+    if (amount > 1000000000) { // 1 billion limit
+        e.preventDefault();
+        if (!confirm('Are you sure this amount is correct? $' + amount.toLocaleString())) {
+            return false;
+        }
+    }
+
+    // If "Add another" is checked, change form action
+    const addAnother = document.getElementById('addAnother');
+    if (addAnother && addAnother.checked) {
+        // You might want to handle this differently based on your needs
+        // This is just a placeholder for the functionality
+        console.log('Add another income after save');
+    }
+});
+</script>
+{% endblock %}

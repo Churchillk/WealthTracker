@@ -1,0 +1,240 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Goals - Vision Board{% endblock %}
+{% block header_title %}Goals & Vision Board{% endblock %}
+{% block header_subtitle %}Set, track, and achieve your goals{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Add Button -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold">Your Goals</h2>
+            <p class="text-slate-400">Turn your vision into reality</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <input type="text"
+                       placeholder="Search goals..."
+                       class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pl-10 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+            </div>
+            <a href="{% url 'goals-create' %}" class="btn-primary">
+                <i class="fas fa-plus mr-2"></i> New Goal
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-bullseye text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Total Goals</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">{{ total_goals|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-check-circle text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Achieved</p>
+                    <h3 class="text-2xl font-bold text-blue-400">{{ achieved_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-clock text-amber-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">In Progress</p>
+                    <h3 class="text-2xl font-bold text-amber-400">{{ in_progress_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-violet-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-trophy text-violet-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Success Rate</p>
+                    <h3 class="text-2xl font-bold text-violet-400">{{ success_rate|default:"0" }}%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Categories -->
+    <div class="card rounded-xl p-6">
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button class="px-4 py-2 bg-emerald-900/30 text-emerald-400 rounded-lg font-medium">All Goals</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Financial</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Career</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Personal</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Health</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Education</button>
+        </div>
+
+        <!-- Goals Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for goal in goals %}
+            <div class="bg-slate-800/50 rounded-xl p-6 border {% if goal.achieved %}border-emerald-500/50{% else %}border-slate-700{% endif %} hover:border-emerald-500 transition-colors">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold mb-1">{{ goal.goal_title }}</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-3 py-1 {% if goal.achieved %}bg-emerald-900/30 text-emerald-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
+                                {% if goal.achieved %}Achieved{% else %}In Progress{% endif %}
+                            </span>
+                            <span class="text-sm text-slate-400">{{ goal.date_set|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if not goal.achieved %}
+                        <button onclick="markAchieved({{ goal.pk }})" class="w-8 h-8 bg-emerald-900/30 hover:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-400 hover:text-emerald-300">
+                            <i class="fas fa-check text-sm"></i>
+                        </button>
+                        {% endif %}
+                        <a href="{% url 'goals-update' goal.pk %}"
+                           class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-edit text-sm"></i>
+                        </a>
+                        <a href="{% url 'goals-delete' goal.pk %}"
+                           class="w-8 h-8 bg-rose-900/30 hover:bg-rose-900/50 rounded-full flex items-center justify-center text-rose-400 hover:text-rose-300">
+                            <i class="fas fa-trash text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <p class="text-slate-400 text-sm mb-6 line-clamp-3">{{ goal.goal_description|truncatechars:150 }}</p>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-slate-400">Progress</span>
+                            <span class="text-sm {% if goal.achieved %}text-emerald-400{% else %}text-slate-400{% endif %}">
+                                {% if goal.achieved %}100%{% else %}{{ goal.progress|default:"0" }}%{% endif %}
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            <div class="{% if goal.achieved %}bg-emerald-500{% else %}bg-emerald-500{% endif %} h-2 rounded-full" style="width: {% if goal.achieved %}100{% else %}{{ goal.progress|default:"0" }}{% endif %}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-plus text-slate-500 mr-2"></i>
+                            <span class="text-slate-400">Set: {{ goal.date_set|date:"M d" }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-flag-checkered text-slate-500 mr-2"></i>
+                            <span class="text-slate-400">Due: {{ goal.end_date|date:"M d" }}</span>
+                        </div>
+                    </div>
+
+                    {% if goal.end_date < now %}
+                    <div class="pt-3 border-t border-slate-700">
+                        <p class="text-sm text-rose-400">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            Deadline passed
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="md:col-span-3 text-center py-12">
+                <div class="max-w-md mx-auto">
+                    <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-bullseye text-3xl text-slate-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">No Goals Yet</h3>
+                    <p class="text-slate-400 mb-6">Set your first goal to start your journey to success</p>
+                    <a href="{% url 'goals-create' %}" class="btn-primary inline-block">
+                        <i class="fas fa-plus mr-2"></i> Set Your First Goal
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Goals Timeline -->
+    <div class="card rounded-xl p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold">Goals Timeline</h3>
+            <span class="text-sm text-slate-400">{{ goals|length }} goals total</span>
+        </div>
+
+        <div class="relative">
+            <!-- Timeline Line -->
+            <div class="absolute left-8 top-0 bottom-0 w-0.5 bg-slate-700"></div>
+
+            <!-- Timeline Items -->
+            <div class="space-y-8">
+                {% for goal in goals|slice:":5" %}
+                <div class="relative pl-16">
+                    <!-- Timeline Dot -->
+                    <div class="absolute left-6 top-1/2 transform -translate-y-1/2 -translate-x-1/2">
+                        <div class="w-4 h-4 rounded-full {% if goal.achieved %}bg-emerald-500{% else %}bg-amber-500{% endif %}"></div>
+                    </div>
+
+                    <!-- Goal Card -->
+                    <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold mb-1">{{ goal.goal_title }}</h4>
+                                <p class="text-sm text-slate-400 mb-2">{{ goal.goal_description|truncatechars:100 }}</p>
+                                <div class="flex items-center space-x-4 text-sm">
+                                    <span class="text-slate-400">{{ goal.date_set|date:"M d, Y" }}</span>
+                                    <span class="text-slate-500">→</span>
+                                    <span class="{% if goal.end_date < now %}text-rose-400{% else %}text-slate-400{% endif %}">{{ goal.end_date|date:"M d, Y" }}</span>
+                                    <span class="px-2 py-1 {% if goal.achieved %}bg-emerald-900/30 text-emerald-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full">
+                                        {% if goal.achieved %}Achieved{% else %}In Progress{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'goals-update' goal.pk %}"
+                                   class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-edit text-sm"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <p class="text-slate-400">No goals to display on timeline</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markAchieved(goalId) {
+    if (confirm('Mark this goal as achieved?')) {
+        // You would typically make an AJAX call here
+        // For now, we'll show a message
+        alert('Goal marked as achieved! Update this function to make an actual API call.');
+    }
+}
+</script>
+{% endblock %}

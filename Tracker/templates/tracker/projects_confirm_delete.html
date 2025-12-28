@@ -1,0 +1,92 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Delete Project{% endblock %}
+{% block header_title %}Delete Project{% endblock %}
+{% block header_subtitle %}Confirm deletion{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="card rounded-xl p-8">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-project-diagram text-3xl text-rose-400"></i>
+            </div>
+
+            <h3 class="text-xl font-bold mb-4">Delete Project</h3>
+            <div class="bg-slate-800/50 rounded-lg p-6 mb-6">
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 {% if object.status == 'In Progress' %}bg-emerald-900/30{% elif object.status == 'Completed' %}bg-blue-900/30{% elif object.status == 'Planning' %}bg-amber-900/30{% else %}bg-rose-900/30{% endif %} rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-project-diagram {% if object.status == 'In Progress' %}text-emerald-400{% elif object.status == 'Completed' %}text-blue-400{% elif object.status == 'Planning' %}text-amber-400{% else %}text-rose-400{% endif %}"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-lg">{{ object.name }}</p>
+                                <span class="px-3 py-1 {% if object.status == 'In Progress' %}bg-emerald-900/30 text-emerald-400{% elif object.status == 'Completed' %}bg-blue-900/30 text-blue-400{% elif object.status == 'Planning' %}bg-amber-900/30 text-amber-400{% else %}bg-rose-900/30 text-rose-400{% endif %} rounded-full text-sm">
+                                    {{ object.status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-slate-400 mb-1">Description:</p>
+                            <p class="text-slate-300">{{ object.description|truncatechars:200 }}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-slate-400 mb-1">Start Date:</p>
+                                <p class="text-slate-300">{{ object.date_set|date:"M d, Y" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-400 mb-1">Target End:</p>
+                                <p class="text-slate-300">{{ object.end_date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+
+                        {% if object.what_next %}
+                        <div class="pt-3 border-t border-slate-700">
+                            <p class="text-sm text-slate-400 mb-1">Linked Task:</p>
+                            <p class="text-slate-300">{{ object.what_next.do|truncatechars:100 }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-rose-900/20 border border-rose-800 rounded-lg p-4 mb-8">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-rose-400 mt-1 mr-3"></i>
+                    <div>
+                        <p class="text-rose-300 font-medium mb-2">Warning: This action cannot be undone</p>
+                        <p class="text-sm text-rose-400">This project and all its data will be permanently deleted. Any linked tasks will remain but the connection will be removed.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div class="flex items-center justify-center space-x-4">
+                    <a href="{% url 'projects-list' %}"
+                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                    <button type="submit"
+                            class="btn-danger px-6 py-3 flex items-center">
+                        <i class="fas fa-trash mr-2"></i>Delete Project
+                    </button>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-slate-800">
+                    <p class="text-sm text-slate-500">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Consider changing status to "On Hold" instead if you might need this project later.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

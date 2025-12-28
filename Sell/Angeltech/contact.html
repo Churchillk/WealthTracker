@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AngelTech | Contact Us</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0a0e17;
+            --secondary: #13182b;
+            --tertiary: #1d2439;
+            --accent: #4d7cfe;
+            --accent-light: #6d9aff;
+            --accent-glow: rgba(77, 124, 254, 0.3);
+            --accent-neon: #00f7ff;
+            --accent-neon-glow: rgba(0, 247, 255, 0.3);
+            --silver: #e8edff;
+            --light-gray: #f5f7ff;
+            --dark: #050811;
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.2);
+            --gradient: linear-gradient(135deg, #0a0e17 0%, #13182b 50%, #1d2439 100%);
+            --gradient-accent: linear-gradient(90deg, #4d7cfe 0%, #6d9aff 50%, #00f7ff 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-bg-light: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-border-light: rgba(255, 255, 255, 0.15);
+            --shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --shadow-glow: 0 10px 30px rgba(77, 124, 254, 0.15);
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --transition-fast: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gradient);
+            color: var(--silver);
+            line-height: 1.7;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(77, 124, 254, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 90% 80%, rgba(0, 247, 255, 0.08) 0%, transparent 30%),
+                radial-gradient(circle at 50% 50%, rgba(77, 124, 254, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 25px;
+        }
+
+        .section-padding {
+            padding: 100px 0;
+        }
+
+        /* Header & Navigation */
+        header {
+            background: rgba(10, 14, 23, 0.92);
+            backdrop-filter: blur(15px) saturate(180%);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: white;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-icon {
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-right: 10px;
+            font-size: 2.2rem;
+        }
+
+        .logo span {
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav li {
+            margin-left: 35px;
+        }
+
+        nav a {
+            color: var(--silver);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.05rem;
+            transition: var(--transition-fast);
+            position: relative;
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        nav a:hover {
+            color: var(--accent-light);
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-accent);
+            transition: width 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+            border-radius: 2px;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .cart-icon, .user-icon {
+            position: relative;
+            font-size: 1.3rem;
+            color: var(--silver);
+            transition: var(--transition-fast);
+        }
+
+        .cart-icon:hover, .user-icon:hover {
+            color: var(--accent-light);
+            transform: translateY(-2px);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--accent);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid var(--primary);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--silver);
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .mobile-menu-btn:hover {
+            color: var(--accent-light);
+        }
+
+        /* Contact Page Specific Styles */
+        .contact-page {
+            padding: 160px 0 100px;
+            min-height: 70vh;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-badge {
+            display: inline-block;
+            background: rgba(77, 124, 254, 0.15);
+            color: var(--accent-light);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border: 1px solid rgba(77, 124, 254, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .page-title {
+            font-size: 3.2rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, var(--silver), rgba(232, 237, 255, 0.9));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .page-subtitle {
+            font-size: 1.1rem;
+            color: rgba(232, 237, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .contact-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+        }
+
+        @media (max-width: 992px) {
+            .contact-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Contact Form */
+        .contact-form-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            box-shadow: var(--shadow);
+        }
+
+        .form-header {
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .form-header p {
+            color: rgba(232, 237, 255, 0.7);
+        }
+
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: rgba(232, 237, 255, 0.9);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        .form-input, .form-textarea {
+            background: rgba(13, 18, 33, 0.7);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            color: var(--silver);
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(77, 124, 254, 0.2);
+        }
+
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: var(--gradient-accent);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(77, 124, 254, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Contact Info Section */
+        .contact-info-container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .business-hours {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            padding: 35px;
+            box-shadow: var(--shadow);
+        }
+
+        .hours-header {
+            margin-bottom: 25px;
+        }
+
+        .hours-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hours-list {
+            list-style: none;
+        }
+
+        .hour-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .hour-item:last-child {
+            border-bottom: none;
+        }
+
+        .day {
+            font-weight: 500;
+            color: rgba(232, 237, 255, 0.9);
+        }
+
+        .time {
+            font-weight: 600;
+            color: var(--accent-light);
+        }
+
+        .special-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(77, 124, 254, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(77, 124, 254, 0.2);
+            color: var(--accent-light);
+            font-size: 0.9rem;
+        }
+
+        /* Contact Details */
+        .contact-details {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            padding: 35px;
+            box-shadow: var(--shadow);
+        }
+
+        .details-header {
+            margin-bottom: 25px;
+        }
+
+        .details-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .contact-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .contact-method {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(13, 18, 33, 0.5);
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+        }
+
+        .contact-method:hover {
+            border-color: var(--accent);
+            transform: translateX(5px);
+        }
+
+        .method-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(77, 124, 254, 0.1);
+            border: 1px solid rgba(77, 124, 254, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3rem;
+            color: var(--accent-light);
+            flex-shrink: 0;
+        }
+
+        .method-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: white;
+        }
+
+        .method-info p {
+            color: rgba(232, 237, 255, 0.7);
+            font-size: 0.95rem;
+        }
+
+        /* Map Section */
+        .map-section {
+            margin-top: 50px;
+        }
+
+        .map-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            padding: 35px;
+            box-shadow: var(--shadow);
+        }
+
+        .map-header {
+            margin-bottom: 25px;
+        }
+
+        .map-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .map-wrapper {
+            border-radius: 15px;
+            overflow: hidden;
+            height: 400px;
+            border: 1px solid var(--glass-border);
+        }
+
+        #storeMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 18, 33, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: rgba(232, 237, 255, 0.7);
+        }
+
+        .map-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        .map-address {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(77, 124, 254, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(77, 124, 254, 0.1);
+        }
+
+        .map-address h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--accent-light);
+        }
+
+        .map-address p {
+            color: rgba(232, 237, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            margin-top: 60px;
+        }
+
+        .faq-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            box-shadow: var(--shadow);
+        }
+
+        .faq-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .faq-header h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .faq-header p {
+            color: rgba(232, 237, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .faq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .faq-item {
+            background: rgba(13, 18, 33, 0.5);
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .faq-item.active {
+            border-color: var(--accent);
+        }
+
+        .faq-question {
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .faq-question:hover {
+            background: rgba(77, 124, 254, 0.05);
+        }
+
+        .faq-icon {
+            color: var(--accent-light);
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+        }
+
+        .faq-answer {
+            padding: 0 25px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            color: rgba(232, 237, 255, 0.8);
+        }
+
+        .faq-item.active .faq-answer {
+            padding: 0 25px 25px;
+            max-height: 300px;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--gradient-accent);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            z-index: 3000;
+            transform: translateX(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(5, 8, 17, 0.95);
+            padding: 80px 0 40px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 50px;
+            margin-bottom: 60px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: white;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .footer-logo span {
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .footer-about p {
+            color: rgba(232, 237, 255, 0.7);
+            margin-bottom: 25px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 15px;
+        }
+
+        .footer-links a {
+            color: rgba(232, 237, 255, 0.7);
+            text-decoration: none;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-light);
+            padding-left: 5px;
+        }
+
+        .contact-info p {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(232, 237, 255, 0.7);
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .social-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 45px;
+            height: 45px;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            color: var(--silver);
+            text-decoration: none;
+            transition: var(--transition);
+            border: 1px solid var(--glass-border);
+        }
+
+        .social-icon:hover {
+            background: var(--accent);
+            color: white;
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid var(--glass-border);
+            color: rgba(232, 237, 255, 0.5);
+            font-size: 0.95rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .footer-content {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .contact-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            nav ul {
+                position: fixed;
+                top: 80px;
+                left: 0;
+                width: 100%;
+                background: rgba(10, 14, 23, 0.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                align-items: center;
+                padding: 30px 0;
+                transform: translateY(-100%);
+                opacity: 0;
+                visibility: hidden;
+                transition: var(--transition);
+                border-bottom: 1px solid var(--glass-border);
+                z-index: 1000;
+            }
+
+            nav ul.active {
+                transform: translateY(0);
+                opacity: 1;
+                visibility: visible;
+            }
+
+            nav li {
+                margin: 15px 0;
+            }
+
+            .nav-actions {
+                display: none;
+            }
+
+            .page-title {
+                font-size: 2.5rem;
+            }
+
+            .contact-form-container,
+            .business-hours,
+            .contact-details,
+            .map-container,
+            .faq-container {
+                padding: 30px 25px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .contact-page {
+                padding: 140px 0 60px;
+            }
+
+            .page-title {
+                font-size: 2.2rem;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .form-input, .form-textarea {
+                padding: 14px 18px;
+            }
+
+            .hour-item {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header & Navigation -->
+    <header>
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-microchip logo-icon"></i>
+                <span>Angel</span>Tech
+            </a>
+
+            <nav>
+                <ul id="mainMenu">
+                    <li><a href="index.html#home"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="index.html#featured"><i class="fas fa-star"></i> Featured</a></li>
+                    <li><a href="index.html#categories"><i class="fas fa-th-large"></i> Categories</a></li>
+                    <li><a href="index.html#gallery"><i class="fas fa-shopping-bag"></i> Products</a></li>
+                    <li><a href="contact.html" class="active"><i class="fas fa-envelope"></i> Contact</a></li>
+                </ul>
+            </nav>
+
+            <div class="nav-actions">
+                <a href="cart.html" class="cart-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+                <a href="#" class="user-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Contact Page Content -->
+    <section class="contact-page">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-badge">
+                    <i class="fas fa-headset"></i> Get In Touch
+                </div>
+                <h1 class="page-title">Contact Us</h1>
+                <p class="page-subtitle">We're here to help! Reach out to us with any questions, concerns, or feedback.</p>
+            </div>
+
+            <div class="contact-container">
+                <!-- Contact Form -->
+                <div class="contact-form-container">
+                    <div class="form-header">
+                        <h2>Send us a Message</h2>
+                        <p>Fill out the form below and we'll get back to you as soon as possible.</p>
+                    </div>
+
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-user"></i> Full Name <span class="required">*</span>
+                            </label>
+                            <input type="text" id="name" name="name" class="form-input" placeholder="Enter your full name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email Address <span class="required">*</span>
+                            </label>
+                            <input type="email" id="email" name="email" class="form-input" placeholder="Enter your email address" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subject" class="form-label">
+                                <i class="fas fa-tag"></i> Subject
+                            </label>
+                            <input type="text" id="subject" name="subject" class="form-input" placeholder="What is this regarding?">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message" class="form-label">
+                                <i class="fas fa-comment-dots"></i> Message <span class="required">*</span>
+                            </label>
+                            <textarea id="message" name="message" class="form-textarea" placeholder="Type your message here..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="submit-btn" id="submitBtn">
+                            <i class="fas fa-paper-plane"></i> Send Message
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Contact Info & Business Hours -->
+                <div class="contact-info-container">
+                    <!-- Business Hours -->
+                    <div class="business-hours">
+                        <div class="hours-header">
+                            <h2><i class="fas fa-clock"></i> Business Hours</h2>
+                            <p>Visit us during our operating hours</p>
+                        </div>
+
+                        <ul class="hours-list">
+                            <li class="hour-item">
+                                <span class="day">Monday - Friday</span>
+                                <span class="time">9:00 AM - 8:00 PM</span>
+                            </li>
+                            <li class="hour-item">
+                                <span class="day">Saturday</span>
+                                <span class="time">10:00 AM - 6:00 PM</span>
+                            </li>
+                            <li class="hour-item">
+                                <span class="day">Sunday</span>
+                                <span class="time">11:00 AM - 5:00 PM</span>
+                            </li>
+                            <li class="hour-item">
+                                <span class="day">Public Holidays</span>
+                                <span class="time">12:00 PM - 4:00 PM</span>
+                            </li>
+                        </ul>
+
+                        <div class="special-note">
+                            <i class="fas fa-info-circle"></i> Extended hours during holiday season. Call ahead to confirm.
+                        </div>
+                    </div>
+
+                    <!-- Contact Details -->
+                    <div class="contact-details">
+                        <div class="details-header">
+                            <h2><i class="fas fa-address-book"></i> Contact Details</h2>
+                            <p>Reach us through any of these channels</p>
+                        </div>
+
+                        <div class="contact-methods">
+                            <div class="contact-method">
+                                <div class="method-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="method-info">
+                                    <h3>Visit Our Store</h3>
+                                    <p>123 Tech Street, Silicon Valley, CA 94000</p>
+                                </div>
+                            </div>
+
+                            <div class="contact-method">
+                                <div class="method-icon">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                                <div class="method-info">
+                                    <h3>Call Us</h3>
+                                    <p>(555) 123-4567</p>
+                                </div>
+                            </div>
+
+                            <div class="contact-method">
+                                <div class="method-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="method-info">
+                                    <h3>Email Us</h3>
+                                    <p>info@angeltech.com</p>
+                                </div>
+                            </div>
+
+                            <div class="contact-method">
+                                <div class="method-icon">
+                                    <i class="fas fa-headset"></i>
+                                </div>
+                                <div class="method-info">
+                                    <h3>Support</h3>
+                                    <p>support@angeltech.com</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Section -->
+            <div class="map-section">
+                <div class="map-container">
+                    <div class="map-header">
+                        <h2><i class="fas fa-map-marked-alt"></i> Find Our Store</h2>
+                        <p>Visit our physical location in Silicon Valley</p>
+                    </div>
+
+                    <div class="map-wrapper">
+                        <!-- Embedded Google Map (Static for demo) -->
+                        <div id="storeMap">
+                            <div class="map-placeholder">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <h3>Interactive Map</h3>
+                                <p>In a real implementation, this would be an embedded Google Map</p>
+                                <p style="margin-top: 10px; font-size: 0.9rem;">Coordinates: 37.3875° N, 122.0575° W</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="map-address">
+                        <h3><i class="fas fa-directions"></i> Store Location Details</h3>
+                        <p><strong>Address:</strong> 123 Tech Street, Silicon Valley, CA 94000</p>
+                        <p><strong>Parking:</strong> Free parking available in front of the store and in the adjacent lot.</p>
+                        <p><strong>Accessibility:</strong> Fully wheelchair accessible with ramps and automatic doors.</p>
+                        <p><strong>Public Transport:</strong> Bus lines 22, 55, and 81 stop within a 2-minute walk.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="faq-section">
+                <div class="faq-container">
+                    <div class="faq-header">
+                        <h2>Frequently Asked Questions</h2>
+                        <p>Find quick answers to common questions about our products and services.</p>
+                    </div>
+
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>What is your return policy?</span>
+                                <i class="fas fa-plus faq-icon"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>We offer a 30-day return policy for all products in original condition with packaging. Electronics must be unopened or show no signs of use. Refunds are processed within 5-7 business days after we receive the returned item.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Do you offer technical support?</span>
+                                <i class="fas fa-plus faq-icon"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Yes! We provide free technical support for all products purchased from AngelTech. You can reach our support team by phone, email, or live chat during business hours. For complex issues, we offer remote desktop support.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>What shipping options do you offer?</span>
+                                <i class="fas fa-plus faq-icon"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>We offer standard shipping (3-5 business days), express shipping (1-2 business days), and overnight shipping. Shipping is free on orders over $500. International shipping is available to select countries with varying delivery times.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Do you price match competitors?</span>
+                                <i class="fas fa-plus faq-icon"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Yes, we offer a 30-day price match guarantee. If you find the same product at a lower price from an authorized retailer, we'll match it. Contact our customer service with the competitor's offer details to initiate the price match.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>What warranty do your products come with?</span>
+                                <i class="fas fa-plus faq-icon"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>All products come with at least a 1-year manufacturer warranty. Many electronics have extended warranties available for purchase. Warranty details are included with each product and can also be found on our website.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <i class="fas fa-microchip"></i>
+                        <span>Angel</span>Tech
+                    </div>
+                    <div class="footer-about">
+                        <p>Premium technology retail store offering cutting-edge devices, accessories, and gadgets BlackCodeLabs and professionals.</p>
+                    </div>
+                    <div class="social-icons">
+                        <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="index.html"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="index.html#featured"><i class="fas fa-chevron-right"></i> Featured Products</a></li>
+                        <li><a href="index.html#categories"><i class="fas fa-chevron-right"></i> Categories</a></li>
+                        <li><a href="index.html#gallery"><i class="fas fa-chevron-right"></i> All Products</a></li>
+                        <li><a href="contact.html"><i class="fas fa-chevron-right"></i> Contact Us</a></li>
+                        <li><a href="cart.html"><i class="fas fa-chevron-right"></i> Shopping Cart</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h3>Customer Service</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> FAQ</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Shipping Policy</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Return Policy</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Warranty</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Support Center</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Track Order</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h3>Contact Info</h3>
+                    <div class="contact-info">
+                        <p><i class="fas fa-map-marker-alt"></i> 123 Tech Street, Silicon Valley, CA</p>
+                        <p><i class="fas fa-phone"></i> (555) 123-4567</p>
+                        <p><i class="fas fa-envelope"></i> info@angeltech.com</p>
+                        <p><i class="fas fa-clock"></i> Mon-Fri: 9am-8pm</p>
+                        <p><i class="fas fa-clock"></i> Sat-Sun: 10am-6pm</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="copyright">
+                <p>&copy; 2023 AngelTech. All rights reserved. | Premium Technology Retail</p>
+                <p style="margin-top: 10px; font-size: 0.8rem;">Designed with <i class="fas fa-heart" style="color: #ff4d7d;"></i> BlackCodeLabs</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Cart functionality
+        let cart = JSON.parse(localStorage.getItem('angeltech-cart')) || [];
+
+        // DOM Elements
+        const cartCount = document.querySelector('.cart-count');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mainMenu = document.getElementById('mainMenu');
+        const contactForm = document.getElementById('contactForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const faqItems = document.querySelectorAll('.faq-item');
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Mobile menu toggle
+            mobileMenuBtn.addEventListener('click', function() {
+                mainMenu.classList.toggle('active');
+                this.innerHTML = mainMenu.classList.contains('active')
+                    ? '<i class="fas fa-times"></i>'
+                    : '<i class="fas fa-bars"></i>';
+            });
+
+            // Close mobile menu when clicking a link
+            document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', function() {
+                    mainMenu.classList.remove('active');
+                    mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                });
+            });
+
+            // Contact form submission
+            contactForm.addEventListener('submit', handleFormSubmit);
+
+            // FAQ accordion functionality
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                question.addEventListener('click', () => {
+                    // Close all other FAQ items
+                    faqItems.forEach(otherItem => {
+                        if (otherItem !== item) {
+                            otherItem.classList.remove('active');
+                        }
+                    });
+
+                    // Toggle current FAQ item
+                    item.classList.toggle('active');
+                });
+            });
+        }
+
+        // Handle contact form submission
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            // Get form data
+            const formData = new FormData(contactForm);
+            const name = formData.get('name');
+            const email = formData.get('email');
+            const subject = formData.get('subject');
+            const message = formData.get('message');
+
+            // Validate form
+            if (!name || !email || !message) {
+                showNotification("Please fill in all required fields", "warning");
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                showNotification("Please enter a valid email address", "warning");
+                return;
+            }
+
+            // Disable submit button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            // Simulate form submission (in a real app, this would be an API call)
+            setTimeout(() => {
+                // In a real application, this would send data to a server
+                console.log('Form submitted:', { name, email, subject, message });
+
+                // Show success message
+                showNotification("Message sent successfully! We'll get back to you soon.", "success");
+
+                // Reset form
+                contactForm.reset();
+
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+
+                // Show confirmation modal
+                showConfirmationModal(name, email);
+            }, 1500);
+        }
+
+        // Email validation
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Show confirmation modal after form submission
+        function showConfirmationModal(name, email) {
+            // Create modal overlay
+            const modalOverlay = document.createElement('div');
+            modalOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(5, 8, 17, 0.95);
+                backdrop-filter: blur(20px);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 4000;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.4s ease, visibility 0.4s ease;
+            `;
+
+            // Create modal content
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: rgba(13, 18, 33, 0.95);
+                backdrop-filter: blur(30px);
+                border-radius: 25px;
+                width: 90%;
+                max-width: 500px;
+                padding: 40px;
+                border: 1px solid var(--glass-border);
+                box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+                position: relative;
+                transform: translateY(40px);
+                transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+                text-align: center;
+            `;
+
+            modalContent.innerHTML = `
+                <button class="close-modal" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--silver); font-size: 1.5rem; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div style="font-size: 4rem; margin-bottom: 20px; background: var(--gradient-accent); -webkit-background-clip: text; background-clip: text; color: transparent;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+
+                <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 15px; color: white; font-family: 'Poppins', sans-serif;">Message Sent Successfully!</h2>
+
+                <p style="color: rgba(232, 237, 255, 0.8); margin-bottom: 25px; line-height: 1.6;">
+                    Thank you <strong>${name}</strong> for contacting AngelTech. We've received your message and will get back to you at <strong>${email}</strong> within 24 hours.
+                </p>
+
+                <div style="background: rgba(77, 124, 254, 0.05); border-radius: 15px; padding: 20px; margin-bottom: 30px; border: 1px solid rgba(77, 124, 254, 0.1);">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 10px; color: var(--accent-light);">What happens next?</h3>
+                    <ul style="text-align: left; color: rgba(232, 237, 255, 0.7); padding-left: 20px;">
+                        <li>You'll receive a confirmation email shortly</li>
+                        <li>Our team will review your inquiry</li>
+                        <li>We'll respond within 24 hours</li>
+                        <li>For urgent matters, call (555) 123-4567</li>
+                    </ul>
+                </div>
+
+                <button id="closeModalBtn" style="background: var(--gradient-accent); color: white; border: none; padding: 15px 40px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: var(--transition); width: 100%;">
+                    <i class="fas fa-home"></i> Return to Home
+                </button>
+            `;
+
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+
+            // Show modal with animation
+            setTimeout(() => {
+                modalOverlay.style.opacity = '1';
+                modalOverlay.style.visibility = 'visible';
+                modalContent.style.transform = 'translateY(0)';
+            }, 10);
+
+            // Close modal button
+            modalOverlay.querySelector('.close-modal').addEventListener('click', () => {
+                closeModal(modalOverlay);
+            });
+
+            // Close modal button
+            modalContent.querySelector('#closeModalBtn').addEventListener('click', () => {
+                closeModal(modalOverlay);
+                window.location.href = 'index.html';
+            });
+
+            // Close modal when clicking outside
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    closeModal(modalOverlay);
+                }
+            });
+        }
+
+        // Close modal
+        function closeModal(modalOverlay) {
+            modalOverlay.querySelector('div').style.transform = 'translateY(40px)';
+            modalOverlay.style.opacity = '0';
+            modalOverlay.style.visibility = 'hidden';
+
+            setTimeout(() => {
+                document.body.removeChild(modalOverlay);
+            }, 400);
+        }
+
+        // Update cart count in header
+        function updateCartCount() {
+            const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+            cartCount.textContent = totalItems;
+        }
+
+        // Show notification
+        function showNotification(message, type = "info") {
+            // Remove existing notification
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                document.body.removeChild(existingNotification);
+            }
+
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+
+            // Set icon based on type
+            let icon = 'fas fa-info-circle';
+            if (type === "success") {
+                icon = 'fas fa-check-circle';
+                notification.style.background = 'linear-gradient(90deg, #10b981 0%, #34d399 100%)';
+            } else if (type === "warning") {
+                icon = 'fas fa-exclamation-triangle';
+                notification.style.background = 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)';
+            }
+
+            notification.innerHTML = `<i class="${icon}"></i> ${message}`;
+            document.body.appendChild(notification);
+
+            // Show notification
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+
+            // Hide and remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(150%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 400);
+            }, 3000);
+        }
+
+        // Interactive map placeholder (in a real app, this would initialize Google Maps)
+        function initMap() {
+            // This function would normally initialize Google Maps
+            // For this demo, we'll just show the placeholder
+            console.log('Map would be initialized here with coordinates: 37.3875, -122.0575');
+        }
+    </script>
+</body>
+</html>

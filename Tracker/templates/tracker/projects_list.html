@@ -1,0 +1,246 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Projects - Portfolio{% endblock %}
+{% block header_title %}Projects Portfolio{% endblock %}
+{% block header_subtitle %}Manage your active and upcoming projects{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Add Button -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold">All Projects</h2>
+            <p class="text-slate-400">Track progress and manage your project portfolio</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <input type="text"
+                       placeholder="Search projects..."
+                       class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pl-10 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+            </div>
+            <a href="{% url 'projects-create' %}" class="btn-primary">
+                <i class="fas fa-plus mr-2"></i> New Project
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-play-circle text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">In Progress</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">{{ in_progress_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-clipboard-check text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Completed</p>
+                    <h3 class="text-2xl font-bold text-blue-400">{{ completed_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-clock text-amber-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Planning</p>
+                    <h3 class="text-2xl font-bold text-amber-400">{{ planning_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-rose-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-pause-circle text-rose-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">On Hold</p>
+                    <h3 class="text-2xl font-bold text-rose-400">{{ on_hold_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="card rounded-xl p-6">
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button class="px-4 py-2 bg-emerald-900/30 text-emerald-400 rounded-lg font-medium">All Projects</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">In Progress</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Planning</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Completed</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">On Hold</button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Overdue</button>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for project in projects %}
+            <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 hover:border-emerald-500 transition-colors">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold mb-1">{{ project.name }}</h3>
+                        <span class="px-3 py-1 {% if project.status == 'In Progress' %}bg-emerald-900/30 text-emerald-400{% elif project.status == 'Completed' %}bg-blue-900/30 text-blue-400{% elif project.status == 'Planning' %}bg-amber-900/30 text-amber-400{% else %}bg-rose-900/30 text-rose-400{% endif %} rounded-full text-sm">
+                            {{ project.status }}
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="{% url 'projects-update' project.pk %}"
+                           class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-edit text-sm"></i>
+                        </a>
+                        <a href="{% url 'projects-delete' project.pk %}"
+                           class="w-8 h-8 bg-rose-900/30 hover:bg-rose-900/50 rounded-full flex items-center justify-center text-rose-400 hover:text-rose-300">
+                            <i class="fas fa-trash text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <p class="text-slate-400 text-sm mb-6 line-clamp-3">{{ project.description|truncatechars:150 }}</p>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-slate-400">Timeline</span>
+                            <span class="text-sm text-slate-400">
+                                {{ project.date_set|date:"M d" }} - {{ project.end_date|date:"M d" }}
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            {% with days_total=project.end_date|timeuntil:project.date_set days_passed=now|timeuntil:project.date_set %}
+                            <div class="bg-emerald-500 h-2 rounded-full" style="width: {% widthratio days_passed days_total 100 %}%"></div>
+                            {% endwith %}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-plus text-slate-500 mr-2"></i>
+                            <span class="text-slate-400">Started: {{ project.date_set|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-flag-checkered text-slate-500 mr-2"></i>
+                            <span class="text-slate-400">Due: {{ project.end_date|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+
+                    {% if project.what_next %}
+                    <div class="pt-4 border-t border-slate-700">
+                        <p class="text-sm text-slate-400 mb-1">Linked to:</p>
+                        <p class="text-sm text-emerald-400">{{ project.what_next.do|truncatechars:50 }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="md:col-span-3 text-center py-12">
+                <div class="max-w-md mx-auto">
+                    <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-project-diagram text-3xl text-slate-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">No Projects Yet</h3>
+                    <p class="text-slate-400 mb-6">Start by creating your first project to track your work</p>
+                    <a href="{% url 'projects-create' %}" class="btn-primary inline-block">
+                        <i class="fas fa-plus mr-2"></i> Create First Project
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Projects Table -->
+    <div class="card rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-slate-800">
+            <h3 class="text-lg font-semibold">Detailed Projects List</h3>
+        </div>
+        <div class="table-container">
+            <table class="w-full">
+                <thead class="table-header">
+                    <tr>
+                        <th class="py-4 px-6 text-left">Project Name</th>
+                        <th class="py-4 px-6 text-left">Status</th>
+                        <th class="py-4 px-6 text-left">Start Date</th>
+                        <th class="py-4 px-6 text-left">End Date</th>
+                        <th class="py-4 px-6 text-left">Linked Task</th>
+                        <th class="py-4 px-6 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for project in projects %}
+                    <tr class="table-row">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 {% if project.status == 'In Progress' %}bg-emerald-900/30{% elif project.status == 'Completed' %}bg-blue-900/30{% elif project.status == 'Planning' %}bg-amber-900/30{% else %}bg-rose-900/30{% endif %} rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-project-diagram {% if project.status == 'In Progress' %}text-emerald-400{% elif project.status == 'Completed' %}text-blue-400{% elif project.status == 'Planning' %}text-amber-400{% else %}text-rose-400{% endif %}"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium">{{ project.name }}</p>
+                                    <p class="text-sm text-slate-400">{{ project.description|truncatechars:50 }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">
+                            <span class="px-3 py-1 {% if project.status == 'In Progress' %}bg-emerald-900/30 text-emerald-400{% elif project.status == 'Completed' %}bg-blue-900/30 text-blue-400{% elif project.status == 'Planning' %}bg-amber-900/30 text-amber-400{% else %}bg-rose-900/30 text-rose-400{% endif %} rounded-full text-sm">
+                                {{ project.status }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6">{{ project.date_set|date:"M d, Y" }}</td>
+                        <td class="py-4 px-6">
+                            <div>
+                                <p>{{ project.end_date|date:"M d, Y" }}</p>
+                                <p class="text-sm {% if project.end_date < now %}text-rose-400{% else %}text-slate-400{% endif %}">
+                                    {% if project.end_date < now %}Overdue{% else %}On track{% endif %}
+                                </p>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-slate-400">
+                            {{ project.what_next.do|truncatechars:30|default:"-" }}
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'projects-update' project.pk %}"
+                                   class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-edit text-sm"></i>
+                                </a>
+                                <a href="{% url 'projects-delete' project.pk %}"
+                                   class="w-8 h-8 bg-rose-900/30 hover:bg-rose-900/50 rounded-full flex items-center justify-center text-rose-400 hover:text-rose-300">
+                                    <i class="fas fa-trash text-sm"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-12 px-6 text-center">
+                            <div class="max-w-md mx-auto">
+                                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-project-diagram text-3xl text-slate-600"></i>
+                                </div>
+                                <h3 class="text-xl font-bold mb-2">No Projects Found</h3>
+                                <p class="text-slate-400 mb-6">Create your first project to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

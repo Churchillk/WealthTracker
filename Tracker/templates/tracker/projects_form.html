@@ -1,0 +1,917 @@
+{% extends 'tracker/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Project{% endblock %}
+{% block header_title %}{% if form.instance.pk %}Edit Project{% else %}Add New Project{% endif %} {% endblock %}</h3>
+{% block header_subtitle %}{% if form.instance.pk %}Update project details{% else %}Create a new project{% endif %}</p>{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-option {
+        transition: all 0.3s ease;
+    }
+
+    .status-option:hover {
+        transform: translateY(-2px);
+    }
+
+    .timeline-preview {
+        background: linear-gradient(90deg, #10b981 0%, #8b5cf6 100%);
+    }
+
+    .priority-badge {
+        transition: all 0.3s ease;
+    }
+
+    .priority-badge:hover {
+        transform: scale(1.05);
+    }
+
+    .progress-ring {
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+    }
+
+    .milestone-marker {
+        position: absolute;
+        top: -4px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid #0f172a;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Stats Banner -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-tasks text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Active Projects</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">{{ active_projects|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-check-circle text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Completion Rate</p>
+                    <h3 class="text-2xl font-bold text-blue-400">{{ completion_rate|default:"0" }}%</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-clock text-amber-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Avg. Duration</p>
+                    <h3 class="text-2xl font-bold text-amber-400">{{ avg_duration|default:"0" }} days</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column - Main Form -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Project Overview Card -->
+            <div class="card rounded-xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-chart-bar text-emerald-400 mr-2"></i>
+                            Project Overview
+                        </h3>
+                        <p class="text-slate-400 text-sm mt-1">Define your project's core details</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                            <i class="fas fa-fingerprint mr-1"></i> ID: {% if form.instance.pk %}{{ form.instance.pk|stringformat:"04d" }}{% else %}NEW{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <form method="post" class="space-y-8" id="projectForm">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                            <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                        </div>
+                        <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Section 1: Project Identity -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-fingerprint text-emerald-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Project Identity</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Name Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-tag mr-2"></i>Project Name
+                                </label>
+                                {% render_field form.name class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Enter project name" %}
+                                <p class="text-xs text-slate-500">Give your project a clear, descriptive name</p>
+                            </div>
+
+                            <!-- Linked Task Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-link mr-2"></i>Linked Now & Next Task
+                                </label>
+                                {% render_field form.what_next class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                <p class="text-xs text-slate-500">Optional: Link to a specific task for better tracking</p>
+                            </div>
+                        </div>
+
+                        <!-- Description Field -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-align-left mr-2"></i>Project Description
+                            </label>
+                            {% render_field form.description class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="4" placeholder="Describe the project scope, objectives, and deliverables..." %}
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs text-slate-500">Detailed description helps in tracking progress</p>
+                                <span id="descCharCount" class="text-xs text-slate-500">0/2000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Timeline & Scheduling -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-calendar-alt text-blue-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Timeline & Scheduling</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Start Date Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-play-circle mr-2"></i>Start Date
+                                </label>
+                                {% render_field form.date_set class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                <p class="text-xs text-slate-500">When will the project begin?</p>
+                            </div>
+
+                            <!-- End Date Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-flag-checkered mr-2"></i>Target Completion
+                                </label>
+                                {% render_field form.end_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                <p class="text-xs text-slate-500">When should the project be completed?</p>
+                            </div>
+                        </div>
+
+                        <!-- Timeline Visualization -->
+                        <div class="bg-slate-800/50 rounded-xl p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h5 class="font-semibold">Timeline Visualization</h5>
+                                <span id="timelineDuration" class="text-sm text-emerald-400">- days</span>
+                            </div>
+
+                            <!-- Timeline Bar -->
+                            <div class="relative mb-8">
+                                <div class="absolute left-0 right-0 top-1/2 h-1 bg-slate-700 transform -translate-y-1/2 rounded-full"></div>
+                                <div id="timelinePreview" class="absolute left-0 top-1/2 h-2 bg-gradient-to-r from-emerald-500 to-violet-500 transform -translate-y-1/2 rounded-full transition-all duration-300" style="width: 0%"></div>
+
+                                <!-- Start Marker -->
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2">
+                                    <div class="milestone-marker bg-emerald-500"></div>
+                                    <div class="mt-4 text-xs text-slate-400 text-center">
+                                        <div>Start</div>
+                                        <div id="startDatePreview" class="font-medium">-</div>
+                                    </div>
+                                </div>
+
+                                <!-- Current Date Marker -->
+                                <div id="currentMarker" class="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 transition-all duration-300" style="left: 0%">
+                                    <div class="milestone-marker bg-amber-500"></div>
+                                    <div class="mt-4 text-xs text-amber-400 text-center">
+                                        <div>Today</div>
+                                        <div class="font-medium">{{ now|date:"M d" }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- End Marker -->
+                                <div class="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2">
+                                    <div class="milestone-marker bg-violet-500"></div>
+                                    <div class="mt-4 text-xs text-slate-400 text-center">
+                                        <div>Target</div>
+                                        <div id="endDatePreview" class="font-medium">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Stats -->
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="text-center p-3 bg-slate-800/30 rounded-lg">
+                                    <div class="text-sm text-slate-400">Days Remaining</div>
+                                    <div id="daysRemaining" class="text-xl font-bold text-emerald-400">-</div>
+                                </div>
+                                <div class="text-center p-3 bg-slate-800/30 rounded-lg">
+                                    <div class="text-sm text-slate-400">Progress</div>
+                                    <div id="progressPercentage" class="text-xl font-bold text-blue-400">0%</div>
+                                </div>
+                                <div class="text-center p-3 bg-slate-800/30 rounded-lg">
+                                    <div class="text-sm text-slate-400">Status</div>
+                                    <div id="timelineStatus" class="text-xl font-bold text-amber-400">Pending</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Project Configuration -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-cogs text-violet-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Project Configuration</h4>
+                        </div>
+
+                        <!-- Status Selection -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-3">
+                                    <i class="fas fa-chart-line mr-2"></i>Project Status & Priority
+                                </label>
+
+                                <!-- Status Options -->
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                                    <button type="button" onclick="setStatus('Planning')" class="status-option p-4 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center">
+                                        <i class="fas fa-clipboard-list text-amber-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">Planning</p>
+                                        <p class="text-xs text-slate-400">Initial phase</p>
+                                    </button>
+                                    <button type="button" onclick="setStatus('In Progress')" class="status-option p-4 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
+                                        <i class="fas fa-play-circle text-emerald-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">In Progress</p>
+                                        <p class="text-xs text-slate-400">Active work</p>
+                                    </button>
+                                    <button type="button" onclick="setStatus('Completed')" class="status-option p-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
+                                        <i class="fas fa-check-circle text-blue-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">Completed</p>
+                                        <p class="text-xs text-slate-400">Finished</p>
+                                    </button>
+                                    <button type="button" onclick="setStatus('On Hold')" class="status-option p-4 bg-rose-900/20 hover:bg-rose-900/30 border border-rose-800/30 rounded-lg text-center">
+                                        <i class="fas fa-pause-circle text-rose-400 text-lg mb-2"></i>
+                                        <p class="font-medium text-sm">On Hold</p>
+                                        <p class="text-xs text-slate-400">Paused</p>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="statusInput" name="status" value="{{ form.instance.status|default:'Planning' }}">
+
+                                <!-- Priority Selection -->
+                                <div class="mb-4">
+                                    <p class="text-sm text-slate-300 mb-3">Priority Level:</p>
+                                    <div class="flex space-x-3">
+                                        <button type="button" onclick="setPriority('Low')" class="priority-badge px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300">
+                                            <i class="fas fa-arrow-down mr-2"></i>Low
+                                        </button>
+                                        <button type="button" onclick="setPriority('Medium')" class="priority-badge px-4 py-2 bg-amber-900/30 hover:bg-amber-900/50 border border-amber-800/30 rounded-lg text-amber-400">
+                                            <i class="fas fa-minus mr-2"></i>Medium
+                                        </button>
+                                        <button type="button" onclick="setPriority('High')" class="priority-badge px-4 py-2 bg-rose-900/30 hover:bg-rose-900/50 border border-rose-800/30 rounded-lg text-rose-400">
+                                            <i class="fas fa-arrow-up mr-2"></i>High
+                                        </button>
+                                        <button type="button" onclick="setPriority('Critical')" class="priority-badge px-4 py-2 bg-violet-900/30 hover:bg-violet-900/50 border border-violet-800/30 rounded-lg text-violet-400">
+                                            <i class="fas fa-exclamation-triangle mr-2"></i>Critical
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="priorityInput" name="priority" value="{{ form.instance.priority|default:'Medium' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold">Quick Actions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setStartToday()">
+                                <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">Start Today</p>
+                                <p class="text-xs text-slate-400">Set start date</p>
+                            </button>
+
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setEndNextMonth()">
+                                <i class="fas fa-calendar-plus text-violet-400 text-lg mb-2"></i>
+                                <p class="font-medium">30 Days</p>
+                                <p class="text-xs text-slate-400">Month duration</p>
+                            </button>
+
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setEndQuarter()">
+                                <i class="fas fa-calendar-week text-blue-400 text-lg mb-2"></i>
+                                <p class="font-medium">90 Days</p>
+                                <p class="text-xs text-slate-400">Quarter duration</p>
+                            </button>
+
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
+                                <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
+                                <p class="font-medium">Clear Form</p>
+                                <p class="text-xs text-slate-400">Reset all fields</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="pt-6 border-t border-slate-800">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm text-slate-400">Add another project</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="setReminder" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm text-slate-400">Set reminders</span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <a href="{% url 'projects-list' %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                <button type="submit"
+                                        class="btn-primary px-8 py-3 flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if form.instance.pk %}Update Project{% else %}Create Project{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="space-y-6">
+            <!-- Project Preview -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-eye mr-2"></i>Project Preview
+                </h4>
+                <div class="space-y-4" id="projectPreview">
+                    <div class="p-4 bg-slate-800/30 rounded-lg">
+                        <div class="flex items-center justify-between mb-3">
+                            <h5 class="font-bold" id="previewName">Project Name</h5>
+                            <span class="px-2 py-1 bg-amber-900/30 text-amber-400 rounded-full text-xs" id="previewStatus">
+                                Planning
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-3" id="previewDescription">
+                            Project description will appear here...
+                        </p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="text-center">
+                                <div class="text-xs text-slate-400">Start</div>
+                                <div class="text-sm font-medium" id="previewStartDate">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-slate-400">Target</div>
+                                <div class="text-sm font-medium" id="previewEndDate">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Ring -->
+                    <div class="relative w-32 h-32 mx-auto">
+                        <svg class="w-full h-full" viewBox="0 0 36 36">
+                            <path d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#1e293b"
+                                stroke-width="3"
+                                stroke-linecap="round"/>
+                            <path id="progressRing"
+                                d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#10b981"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                stroke-dasharray="100, 100"
+                                class="progress-ring"/>
+                            <text x="18" y="20" text-anchor="middle" fill="#e2e8f0" font-size="6" font-weight="bold">
+                                <tspan x="18" y="18" id="progressText">0%</tspan>
+                            </text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Metrics -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-chart-line mr-2"></i>Project Metrics
+                </h4>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-emerald-900/30 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-clock text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">Duration</p>
+                                <p class="text-xs text-slate-400">Total timeline</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-bold text-emerald-400" id="metricDuration">-</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-blue-900/30 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-calendar-alt text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">Days Left</p>
+                                <p class="text-xs text-slate-400">Until completion</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-bold text-blue-400" id="metricDaysLeft">-</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-amber-900/30 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-bolt text-amber-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">Priority</p>
+                                <p class="text-xs text-slate-400">Urgency level</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 bg-amber-900/30 text-amber-400 rounded-full text-sm" id="metricPriority">
+                            Medium
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-magic mr-2"></i>Quick Templates
+                </h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" onclick="applyTemplate('web')" class="p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-center transition-colors">
+                        <i class="fas fa-globe text-emerald-400 text-lg mb-2"></i>
+                        <p class="text-sm font-medium">Web Project</p>
+                        <p class="text-xs text-slate-400">60 days</p>
+                    </button>
+                    <button type="button" onclick="applyTemplate('mobile')" class="p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-center transition-colors">
+                        <i class="fas fa-mobile-alt text-violet-400 text-lg mb-2"></i>
+                        <p class="text-sm font-medium">Mobile App</p>
+                        <p class="text-xs text-slate-400">90 days</p>
+                    </button>
+                    <button type="button" onclick="applyTemplate('consulting')" class="p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-center transition-colors">
+                        <i class="fas fa-comments-dollar text-blue-400 text-lg mb-2"></i>
+                        <p class="text-sm font-medium">Consulting</p>
+                        <p class="text-xs text-slate-400">30 days</p>
+                    </button>
+                    <button type="button" onclick="applyTemplate('research')" class="p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-center transition-colors">
+                        <i class="fas fa-flask text-amber-400 text-lg mb-2"></i>
+                        <p class="text-sm font-medium">Research</p>
+                        <p class="text-xs text-slate-400">120 days</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tips & Guidelines -->
+            <div class="card rounded-xl p-6">
+                <h4 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-lightbulb mr-2"></i>Best Practices
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium">Clear Objectives</p>
+                            <p class="text-xs text-slate-400">Define specific, measurable goals</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium">Realistic Timeline</p>
+                            <p class="text-xs text-slate-400">Account for buffer time</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium">Regular Updates</p>
+                            <p class="text-xs text-slate-400">Track progress weekly</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const descTextarea = document.querySelector('textarea[name="description"]');
+    const nameInput = document.querySelector('input[name="name"]');
+    const startDateInput = document.querySelector('input[name="date_set"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    const statusInput = document.getElementById('statusInput');
+    const priorityInput = document.getElementById('priorityInput');
+
+    // Character counter for description
+    if (descTextarea) {
+        const descCharCount = document.getElementById('descCharCount');
+        descTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            descCharCount.textContent = length + '/2000';
+            if (length > 1800) {
+                descCharCount.classList.remove('text-slate-500');
+                descCharCount.classList.add('text-amber-400');
+            } else if (length > 1950) {
+                descCharCount.classList.remove('text-amber-400');
+                descCharCount.classList.add('text-rose-400');
+            } else {
+                descCharCount.classList.remove('text-amber-400', 'text-rose-400');
+                descCharCount.classList.add('text-slate-500');
+            }
+
+            // Update preview
+            updatePreview();
+        });
+        descTextarea.dispatchEvent(new Event('input'));
+    }
+
+    // Update name preview
+    nameInput.addEventListener('input', updatePreview);
+
+    // Update timeline and preview
+    function updateTimeline() {
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const now = new Date();
+
+            // Calculate total days
+            const totalMs = end - start;
+            const totalDays = Math.ceil(totalMs / (1000 * 60 * 60 * 24));
+
+            // Calculate days passed and remaining
+            const daysPassed = Math.max(0, Math.ceil((now - start) / (1000 * 60 * 60 * 24)));
+            const daysRemaining = Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)));
+
+            // Calculate progress percentage
+            let progress = 0;
+            if (now >= start && now <= end) {
+                progress = Math.min(100, (daysPassed / totalDays) * 100);
+            } else if (now > end) {
+                progress = 100;
+            }
+
+            // Update UI elements
+            document.getElementById('timelineDuration').textContent = totalDays + ' days';
+            document.getElementById('daysRemaining').textContent = daysRemaining;
+            document.getElementById('progressPercentage').textContent = progress.toFixed(1) + '%';
+
+            // Update progress ring
+            const progressRing = document.getElementById('progressRing');
+            const progressText = document.getElementById('progressText');
+            const dashArray = 100 - progress;
+            progressRing.style.strokeDasharray = `${progress} ${dashArray}`;
+            progressText.textContent = progress.toFixed(0) + '%';
+
+            // Update timeline bar
+            document.getElementById('timelinePreview').style.width = progress + '%';
+            document.getElementById('currentMarker').style.left = progress + '%';
+
+            // Update date displays
+            const startDateStr = start.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+            const endDateStr = end.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+
+            document.getElementById('startDatePreview').textContent = startDateStr;
+            document.getElementById('endDatePreview').textContent = endDateStr;
+
+            // Update metrics
+            document.getElementById('metricDuration').textContent = totalDays + ' days';
+            document.getElementById('metricDaysLeft').textContent = daysRemaining;
+
+            // Determine timeline status
+            let timelineStatus = 'Pending';
+            let statusColor = 'text-amber-400';
+
+            if (now < start) {
+                timelineStatus = 'Pending';
+                statusColor = 'text-amber-400';
+            } else if (now > end) {
+                timelineStatus = 'Overdue';
+                statusColor = 'text-rose-400';
+            } else if (progress > 75) {
+                timelineStatus = 'Late Stage';
+                statusColor = 'text-violet-400';
+            } else if (progress > 25) {
+                timelineStatus = 'In Progress';
+                statusColor = 'text-emerald-400';
+            } else {
+                timelineStatus = 'Early Stage';
+                statusColor = 'text-blue-400';
+            }
+
+            document.getElementById('timelineStatus').textContent = timelineStatus;
+            document.getElementById('timelineStatus').className = `text-xl font-bold ${statusColor}`;
+
+            // Update preview
+            updatePreview();
+        }
+    }
+
+    startDateInput.addEventListener('change', updateTimeline);
+    endDateInput.addEventListener('change', updateTimeline);
+
+    // Update project preview
+    function updatePreview() {
+        // Update name
+        const previewName = document.getElementById('previewName');
+        previewName.textContent = nameInput.value || 'Project Name';
+
+        // Update description
+        const previewDesc = document.getElementById('previewDescription');
+        previewDesc.textContent = descTextarea.value || 'Project description will appear here...';
+        if (descTextarea.value.length > 100) {
+            previewDesc.textContent = descTextarea.value.substring(0, 100) + '...';
+        }
+
+        // Update dates
+        if (startDateInput.value) {
+            const start = new Date(startDateInput.value);
+            document.getElementById('previewStartDate').textContent = start.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        if (endDateInput.value) {
+            const end = new Date(endDateInput.value);
+            document.getElementById('previewEndDate').textContent = end.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Update status
+        const status = statusInput.value || 'Planning';
+        const previewStatus = document.getElementById('previewStatus');
+        previewStatus.textContent = status;
+
+        // Update status color
+        let statusClass = 'bg-amber-900/30 text-amber-400';
+        if (status === 'In Progress') statusClass = 'bg-emerald-900/30 text-emerald-400';
+        if (status === 'Completed') statusClass = 'bg-blue-900/30 text-blue-400';
+        if (status === 'On Hold') statusClass = 'bg-rose-900/30 text-rose-400';
+        previewStatus.className = `px-2 py-1 ${statusClass} rounded-full text-xs`;
+
+        // Update priority
+        const priority = priorityInput.value || 'Medium';
+        document.getElementById('metricPriority').textContent = priority;
+    }
+
+    // Initial updates
+    updateTimeline();
+    updatePreview();
+});
+
+function setStatus(status) {
+    document.getElementById('statusInput').value = status;
+
+    // Visual feedback for buttons
+    document.querySelectorAll('.status-option').forEach(opt => {
+        opt.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500');
+    });
+    event.currentTarget.classList.add('ring-2', 'ring-emerald-500', 'border-emerald-500');
+
+    // Update preview
+    updatePreview();
+}
+
+function setPriority(priority) {
+    document.getElementById('priorityInput').value = priority;
+
+    // Visual feedback for buttons
+    document.querySelectorAll('.priority-badge').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500');
+        // Reset colors
+        if (btn.textContent.includes('Low')) {
+            btn.className = 'priority-badge px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300';
+        } else if (btn.textContent.includes('Medium')) {
+            btn.className = 'priority-badge px-4 py-2 bg-amber-900/30 hover:bg-amber-900/50 border border-amber-800/30 rounded-lg text-amber-400';
+        } else if (btn.textContent.includes('High')) {
+            btn.className = 'priority-badge px-4 py-2 bg-rose-900/30 hover:bg-rose-900/50 border border-rose-800/30 rounded-lg text-rose-400';
+        } else if (btn.textContent.includes('Critical')) {
+            btn.className = 'priority-badge px-4 py-2 bg-violet-900/30 hover:bg-violet-900/50 border border-violet-800/30 rounded-lg text-violet-400';
+        }
+    });
+
+    // Highlight selected button
+    event.currentTarget.classList.add('ring-2', 'ring-emerald-500', 'border-emerald-500');
+
+    // Update preview
+    updatePreview();
+}
+
+function setStartToday() {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 16);
+    const startDateInput = document.querySelector('input[name="date_set"]');
+    startDateInput.value = today;
+    startDateInput.dispatchEvent(new Event('change'));
+}
+
+function setEndNextMonth() {
+    const now = new Date();
+    const nextMonth = new Date(now.setMonth(now.getMonth() + 1));
+    const nextMonthStr = nextMonth.toISOString().slice(0, 16);
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    endDateInput.value = nextMonthStr;
+    endDateInput.dispatchEvent(new Event('change'));
+}
+
+function setEndQuarter() {
+    const now = new Date();
+    const nextQuarter = new Date(now.setMonth(now.getMonth() + 3));
+    const nextQuarterStr = nextQuarter.toISOString().slice(0, 16);
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    endDateInput.value = nextQuarterStr;
+    endDateInput.dispatchEvent(new Event('change'));
+}
+
+function applyTemplate(template) {
+    const nameInput = document.querySelector('input[name="name"]');
+    const descTextarea = document.querySelector('textarea[name="description"]');
+    const startDateInput = document.querySelector('input[name="date_set"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+
+    const now = new Date();
+    const today = now.toISOString().slice(0, 16);
+
+    switch(template) {
+        case 'web':
+            nameInput.value = 'Web Development Project';
+            descTextarea.value = 'Full-stack web application development including frontend, backend, database design, and deployment.';
+            setStatus('Planning');
+            setPriority('High');
+            startDateInput.value = today;
+            setEndNextMonth();
+            break;
+        case 'mobile':
+            nameInput.value = 'Mobile App Development';
+            descTextarea.value = 'Cross-platform mobile application development with React Native, including UI/UX design and API integration.';
+            setStatus('Planning');
+            setPriority('High');
+            startDateInput.value = today;
+            setEndQuarter();
+            break;
+        case 'consulting':
+            nameInput.value = 'Business Consulting Project';
+            descTextarea.value = 'Strategic business consulting including market analysis, process optimization, and implementation planning.';
+            setStatus('In Progress');
+            setPriority('Medium');
+            startDateInput.value = today;
+            setEndNextMonth();
+            break;
+        case 'research':
+            nameInput.value = 'Research & Development';
+            descTextarea.value = 'Innovation research project including feasibility studies, prototype development, and technical documentation.';
+            setStatus('Planning');
+            setPriority('Low');
+            startDateInput.value = today;
+            const researchEnd = new Date(now.setMonth(now.getMonth() + 4));
+            endDateInput.value = researchEnd.toISOString().slice(0, 16);
+            break;
+    }
+
+    // Trigger updates
+    nameInput.dispatchEvent(new Event('input'));
+    descTextarea.dispatchEvent(new Event('input'));
+    startDateInput.dispatchEvent(new Event('change'));
+    endDateInput.dispatchEvent(new Event('change'));
+
+    // Show confirmation
+    alert(`${template.charAt(0).toUpperCase() + template.slice(1)} template applied!`);
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear all form fields?')) {
+        document.getElementById('projectForm').reset();
+        document.getElementById('statusInput').value = 'Planning';
+        document.getElementById('priorityInput').value = 'Medium';
+        document.getElementById('descCharCount').textContent = '0/2000';
+
+        // Reset buttons
+        document.querySelectorAll('.status-option').forEach(opt => {
+            opt.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500');
+        });
+
+        document.querySelectorAll('.priority-badge').forEach(btn => {
+            btn.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500');
+            // Reset to default colors
+            if (btn.textContent.includes('Low')) {
+                btn.className = 'priority-badge px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300';
+            } else if (btn.textContent.includes('Medium')) {
+                btn.className = 'priority-badge px-4 py-2 bg-amber-900/30 hover:bg-amber-900/50 border border-amber-800/30 rounded-lg text-amber-400';
+            } else if (btn.textContent.includes('High')) {
+                btn.className = 'priority-badge px-4 py-2 bg-rose-900/30 hover:bg-rose-900/50 border border-rose-800/30 rounded-lg text-rose-400';
+            } else if (btn.textContent.includes('Critical')) {
+                btn.className = 'priority-badge px-4 py-2 bg-violet-900/30 hover:bg-violet-900/50 border border-violet-800/30 rounded-lg text-violet-400';
+            }
+        });
+
+        // Trigger timeline update
+        const startDateInput = document.querySelector('input[name="date_set"]');
+        const endDateInput = document.querySelector('input[name="end_date"]');
+        startDateInput.dispatchEvent(new Event('change'));
+        endDateInput.dispatchEvent(new Event('change'));
+
+        // Update preview
+        updatePreview();
+    }
+}
+
+// Form validation
+document.getElementById('projectForm').addEventListener('submit', function(e) {
+    const nameInput = document.querySelector('input[name="name"]');
+    const startDateInput = document.querySelector('input[name="date_set"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+
+    if (!nameInput.value.trim()) {
+        e.preventDefault();
+        alert('Please enter a project name.');
+        nameInput.focus();
+        return false;
+    }
+
+    if (startDateInput.value && endDateInput.value) {
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+
+        if (end < start) {
+            e.preventDefault();
+            alert('End date cannot be before start date.');
+            endDateInput.focus();
+            return false;
+        }
+    }
+
+    return true;
+});
+</script>
+{% endblock %}

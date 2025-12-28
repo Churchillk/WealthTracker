@@ -1,0 +1,402 @@
+{% extends 'tracker/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Event{% endblock %}
+{% block header_title %}{% if form.instance.pk %}Edit Event{% else %}Add New Event{% endif %}{% endblock %}</h3>
+{% block header_subtitle %}{% if form.instance.pk %}Update event details{% else %}Schedule a new event{% endif %}</p>{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-option {
+        transition: all 0.3s ease;
+    }
+
+    .category-option:hover {
+        transform: translateY(-2px);
+    }
+
+    .duration-preview {
+        background: linear-gradient(90deg, #10b981 0%, #8b5cf6 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card rounded-xl p-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h3 class="text-xl font-bold">
+                    <i class="fas fa-calendar-alt text-emerald-400 mr-2"></i>
+                    {% if form.instance.pk %}Edit Event{% else %}Create New Event{% endif %}
+                </h3>
+                <p class="text-slate-400 text-sm mt-1">
+                    {% if form.instance.pk %}
+                    Scheduled: {{ form.instance.start_date|date:"M d, Y" }}
+                    {% else %}
+                    Plan your next important event or appointment
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <span class="px-3 py-1 {% if form.instance.attended %}bg-blue-900/30 text-blue-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
+                    <i class="fas {% if form.instance.attended %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
+                    {% if form.instance.attended %}Attended{% else %}Scheduled{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-8" id="eventForm">
+            {% csrf_token %}
+
+            <!-- Form Errors -->
+            {% if form.errors %}
+            <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                    <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                </div>
+                <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Section 1: Event Details -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                        <i class="fas fa-info-circle text-emerald-400"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold">Event Details</h4>
+                </div>
+
+                <!-- Title Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-heading mr-2"></i>Event Title
+                    </label>
+                    {% render_field form.title class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Enter event title" %}
+                    <p class="text-xs text-slate-500">Give your event a clear, descriptive name</p>
+                </div>
+
+                <!-- Host Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-user-friends mr-2"></i>Host/Organizer
+                    </label>
+                    {% render_field form.host class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Who is hosting this event?" %}
+                    <p class="text-xs text-slate-500">Company, organization, or individual hosting</p>
+                </div>
+
+                <!-- Category Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-tag mr-2"></i>Event Category
+                    </label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button type="button" onclick="setCategory('Hackathon')" class="category-option p-4 bg-violet-900/20 hover:bg-violet-900/30 border border-violet-800/30 rounded-lg text-center">
+                            <i class="fas fa-code text-violet-400 text-lg mb-2"></i>
+                            <p class="font-medium text-sm">Hackathon</p>
+                        </button>
+                        <button type="button" onclick="setCategory('AI')" class="category-option p-4 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
+                            <i class="fas fa-brain text-emerald-400 text-lg mb-2"></i>
+                            <p class="font-medium text-sm">AI</p>
+                        </button>
+                        <button type="button" onclick="setCategory('Blockchain')" class="category-option p-4 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center">
+                            <i class="fas fa-link text-amber-400 text-lg mb-2"></i>
+                            <p class="font-medium text-sm">Blockchain</p>
+                        </button>
+                        <button type="button" onclick="setCategory('Cybersecurity')" class="category-option p-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
+                            <i class="fas fa-shield-alt text-blue-400 text-lg mb-2"></i>
+                            <p class="font-medium text-sm">Cybersecurity</p>
+                        </button>
+                    </div>
+                    <input type="hidden" id="categoryInput" name="category" value="{{ form.instance.category|default:'Hackathon' }}">
+                </div>
+            </div>
+
+            <!-- Section 2: Date & Time -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
+                        <i class="fas fa-clock text-blue-400"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold">Date & Time</h4>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Start Date Field -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-300">
+                            <i class="fas fa-play-circle mr-2"></i>Start Date & Time
+                        </label>
+                        {% render_field form.start_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                        <p class="text-xs text-slate-500">When does the event begin?</p>
+                    </div>
+
+                    <!-- End Date Field -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-300">
+                            <i class="fas fa-flag-checkered mr-2"></i>End Date & Time
+                        </label>
+                        {% render_field form.end_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                        <p class="text-xs text-slate-500">When does the event conclude?</p>
+                    </div>
+                </div>
+
+                <!-- Duration Preview -->
+                <div class="bg-slate-800/50 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-slate-400">Event Duration</span>
+                        <span id="durationValue" class="text-sm text-emerald-400">-</span>
+                    </div>
+                    <div class="relative h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div id="durationPreview" class="duration-preview h-2 rounded-full absolute left-0" style="width: 50%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500 mt-2">
+                        <span id="startTimePreview">-</span>
+                        <span id="endTimePreview">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Location & Attendance -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                        <i class="fas fa-map-marker-alt text-violet-400"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold">Location & Attendance</h4>
+                </div>
+
+                <!-- Location Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-map mr-2"></i>Location/Venue
+                    </label>
+                    {% render_field form.location class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Enter event location, venue, or virtual meeting link..." %}
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs text-slate-500">Physical address or virtual meeting details</p>
+                        <span id="locationCharCount" class="text-xs text-slate-500">0/500</span>
+                    </div>
+                </div>
+
+                <!-- Attended Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-check-circle mr-2"></i>Attendance Status
+                    </label>
+                    <div class="flex items-center space-x-6">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            {% render_field form.attended class="w-5 h-5 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" id="attendedCheckbox" %}
+                            <span class="text-slate-300">Mark as attended</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-500">Check this after you've attended the event</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="space-y-4">
+                <h4 class="text-lg font-semibold">Quick Actions</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setStartToday()">
+                        <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
+                        <p class="font-medium">Start Today</p>
+                        <p class="text-xs text-slate-400">Set start to now</p>
+                    </button>
+
+                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setEndNextHour()">
+                        <i class="fas fa-hourglass-end text-violet-400 text-lg mb-2"></i>
+                        <p class="font-medium">1 Hour Duration</p>
+                        <p class="text-xs text-slate-400">Ends in 1 hour</p>
+                    </button>
+
+                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
+                        <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
+                        <p class="font-medium">Clear Form</p>
+                        <p class="text-xs text-slate-400">Reset all fields</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="pt-6 border-t border-slate-800">
+                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                        <label for="addAnother" class="text-sm text-slate-400">Add another event after saving</label>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <a href="{% url 'event-list' %}"
+                           class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </a>
+                        <button type="submit"
+                                class="btn-primary px-8 py-3 flex items-center">
+                            <i class="fas fa-save mr-2"></i>
+                            {% if form.instance.pk %}Update Event{% else %}Create Event{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const locationTextarea = document.querySelector('textarea[name="location"]');
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    const attendedCheckbox = document.getElementById('attendedCheckbox');
+
+    // Character counter for location
+    if (locationTextarea) {
+        const locationCharCount = document.getElementById('locationCharCount');
+        locationTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            locationCharCount.textContent = length + '/500';
+            if (length > 450) {
+                locationCharCount.classList.remove('text-slate-500');
+                locationCharCount.classList.add('text-amber-400');
+            } else if (length > 480) {
+                locationCharCount.classList.remove('text-amber-400');
+                locationCharCount.classList.add('text-rose-400');
+            } else {
+                locationCharCount.classList.remove('text-amber-400', 'text-rose-400');
+                locationCharCount.classList.add('text-slate-500');
+            }
+        });
+        locationTextarea.dispatchEvent(new Event('input'));
+    }
+
+    // Duration preview
+    function updateDurationPreview() {
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            // Calculate duration in hours
+            const durationMs = end - start;
+            const durationHours = durationMs / (1000 * 60 * 60);
+
+            // Update duration display
+            if (durationHours < 1) {
+                const durationMinutes = durationMs / (1000 * 60);
+                document.getElementById('durationValue').textContent = Math.round(durationMinutes) + ' minutes';
+            } else {
+                document.getElementById('durationValue').textContent = durationHours.toFixed(1) + ' hours';
+            }
+
+            // Update time displays
+            document.getElementById('startTimePreview').textContent = start.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            document.getElementById('endTimePreview').textContent = end.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            // Update progress bar (simplified)
+            const totalDay = 24 * 60 * 60 * 1000; // milliseconds in a day
+            const progress = Math.min(100, (durationMs / totalDay) * 100);
+            document.getElementById('durationPreview').style.width = progress + '%';
+        }
+    }
+
+    startDateInput.addEventListener('change', updateDurationPreview);
+    endDateInput.addEventListener('change', updateDurationPreview);
+
+    // Initial update
+    updateDurationPreview();
+});
+
+function setCategory(category) {
+    document.getElementById('categoryInput').value = category;
+
+    // Visual feedback
+    document.querySelectorAll('.category-option').forEach(opt => {
+        opt.classList.remove('ring-2', 'ring-emerald-500');
+    });
+    event.currentTarget.classList.add('ring-2', 'ring-emerald-500');
+}
+
+function setStartToday() {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 16);
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    startDateInput.value = today;
+    startDateInput.dispatchEvent(new Event('change'));
+}
+
+function setEndNextHour() {
+    const now = new Date();
+    const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+    const nextHourStr = nextHour.toISOString().slice(0, 16);
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    endDateInput.value = nextHourStr;
+    endDateInput.dispatchEvent(new Event('change'));
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear all form fields?')) {
+        document.getElementById('eventForm').reset();
+        document.getElementById('categoryInput').value = 'Hackathon';
+        document.getElementById('locationCharCount').textContent = '0/500';
+        document.getElementById('durationValue').textContent = '-';
+        document.getElementById('durationPreview').style.width = '0%';
+        document.getElementById('startTimePreview').textContent = '-';
+        document.getElementById('endTimePreview').textContent = '-';
+
+        // Reset category buttons
+        document.querySelectorAll('.category-option').forEach(opt => {
+            opt.classList.remove('ring-2', 'ring-emerald-500');
+        });
+    }
+}
+
+// Form validation
+document.getElementById('eventForm').addEventListener('submit', function(e) {
+    const titleInput = document.querySelector('input[name="title"]');
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+
+    if (!titleInput.value.trim()) {
+        e.preventDefault();
+        alert('Please enter an event title.');
+        titleInput.focus();
+        return false;
+    }
+
+    if (startDateInput.value && endDateInput.value) {
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+
+        if (end <= start) {
+            e.preventDefault();
+            alert('End date must be after start date.');
+            endDateInput.focus();
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}

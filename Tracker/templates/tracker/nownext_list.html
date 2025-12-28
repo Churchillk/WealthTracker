@@ -1,0 +1,295 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Now & Next - Productivity{% endblock %}
+{% block header_title %}Now & Next Tasks{% endblock %}
+{% block header_subtitle %}Plan your immediate and upcoming actions{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Add Button -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold">Now & Next Planning</h2>
+            <p class="text-slate-400">Focus on what matters now and what comes next</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <input type="text"
+                       placeholder="Search tasks..."
+                       class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pl-10 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+            </div>
+            <a href="{% url 'nownext-create' %}" class="btn-primary">
+                <i class="fas fa-plus mr-2"></i> Add Task
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-check-circle text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Completed</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">{{ completed_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-clock text-amber-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Pending</p>
+                    <h3 class="text-2xl font-bold text-amber-400">{{ pending_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-calendar-day text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Today</p>
+                    <h3 class="text-2xl font-bold text-blue-400">{{ today_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-violet-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-bullseye text-violet-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">This Week</p>
+                    <h3 class="text-2xl font-bold text-violet-400">{{ week_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Now Tasks -->
+        <div class="card rounded-xl p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold flex items-center">
+                    <i class="fas fa-bolt text-amber-400 mr-2"></i> Now Tasks
+                </h3>
+                <span class="text-sm text-amber-400">{{ now_tasks|length }} active</span>
+            </div>
+
+            <div class="space-y-4">
+                {% for task in now_tasks %}
+                <div class="bg-slate-800/50 rounded-lg p-4 {% if task.done %}opacity-75{% endif %}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="mt-1">
+                                <input type="checkbox"
+                                       {% if task.done %}checked{% endif %}
+                                       class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-emerald-500 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <p class="font-medium {% if task.done %}line-through text-slate-500{% endif %}">
+                                    {{ task.do|truncatechars:100 }}
+                                </p>
+                                <p class="text-sm text-slate-400 mt-1">{{ task.date|date:"M d, Y • h:i A" }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <a href="{% url 'nownext-update' task.pk %}"
+                               class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                                <i class="fas fa-edit text-sm"></i>
+                            </a>
+                            <a href="{% url 'nownext-delete' task.pk %}"
+                               class="w-8 h-8 bg-rose-900/30 hover:bg-rose-900/50 rounded-full flex items-center justify-center text-rose-400 hover:text-rose-300">
+                                <i class="fas fa-trash text-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    {% if task.challenges %}
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-sm text-slate-400 mb-1">Challenges:</p>
+                        <p class="text-sm text-slate-300">{{ task.challenges|truncatechars:150 }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if task.gratitude %}
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-sm text-emerald-400 mb-1">Gratitude:</p>
+                        <p class="text-sm text-slate-300">{{ task.gratitude|truncatechars:150 }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-tasks text-2xl text-slate-600"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">No Now Tasks</h3>
+                    <p class="text-slate-400 mb-4">Add tasks that need immediate attention</p>
+                    <a href="{% url 'nownext-create' %}" class="btn-primary inline-block">
+                        <i class="fas fa-plus mr-2"></i> Add Now Task
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Next Tasks -->
+        <div class="card rounded-xl p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold flex items-center">
+                    <i class="fas fa-calendar-alt text-violet-400 mr-2"></i> Next Tasks
+                </h3>
+                <span class="text-sm text-violet-400">{{ next_tasks|length }} upcoming</span>
+            </div>
+
+            <div class="space-y-4">
+                {% for task in next_tasks %}
+                <div class="bg-slate-800/50 rounded-lg p-4">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="mt-1">
+                                <div class="w-5 h-5 rounded border-2 border-violet-500 flex items-center justify-center">
+                                    <div class="w-2 h-2 bg-violet-500 rounded-full"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-medium">{{ task.do|truncatechars:100 }}</p>
+                                <p class="text-sm text-slate-400 mt-1">{{ task.date|date:"M d, Y • h:i A" }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <a href="{% url 'nownext-update' task.pk %}"
+                               class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                                <i class="fas fa-edit text-sm"></i>
+                            </a>
+                            <a href="{% url 'nownext-delete' task.pk %}"
+                               class="w-8 h-8 bg-rose-900/30 hover:bg-rose-900/50 rounded-full flex items-center justify-center text-rose-400 hover:text-rose-300">
+                                <i class="fas fa-trash text-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    {% if task.challenges %}
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-sm text-slate-400 mb-1">Considerations:</p>
+                        <p class="text-sm text-slate-300">{{ task.challenges|truncatechars:150 }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if task.gratitude %}
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-sm text-emerald-400 mb-1">Anticipated Value:</p>
+                        <p class="text-sm text-slate-300">{{ task.gratitude|truncatechars:150 }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-calendar-plus text-2xl text-slate-600"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">No Next Tasks</h3>
+                    <p class="text-slate-400 mb-4">Plan what comes after your current tasks</p>
+                    <a href="{% url 'nownext-create' %}" class="btn-primary inline-block">
+                        <i class="fas fa-plus mr-2"></i> Add Next Task
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- All Tasks Table -->
+    <div class="card rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-slate-800">
+            <h3 class="text-lg font-semibold">All Tasks Overview</h3>
+        </div>
+        <div class="table-container">
+            <table class="w-full">
+                <thead class="table-header">
+                    <tr>
+                        <th class="py-4 px-6 text-left">Status</th>
+                        <th class="py-4 px-6 text-left">Date & Time</th>
+                        <th class="py-4 px-6 text-left">Task</th>
+                        <th class="py-4 px-6 text-left">Challenges</th>
+                        <th class="py-4 px-6 text-left">Gratitude/Value</th>
+                        <th class="py-4 px-6 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for task in nownexts %}
+                    <tr class="table-row">
+                        <td class="py-4 px-6">
+                            {% if task.done %}
+                            <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                                <i class="fas fa-check mr-1"></i> Done
+                            </span>
+                            {% else %}
+                            <span class="px-3 py-1 bg-amber-900/30 text-amber-400 rounded-full text-sm">
+                                <i class="fas fa-clock mr-1"></i> Pending
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-6">
+                            <div>
+                                <p class="font-medium">{{ task.date|date:"M d, Y" }}</p>
+                                <p class="text-sm text-slate-400">{{ task.date|time:"h:i A" }}</p>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">
+                            <p class="font-medium">{{ task.do|truncatechars:50 }}</p>
+                        </td>
+                        <td class="py-4 px-6 text-slate-400">
+                            {{ task.challenges|truncatechars:50|default:"-" }}
+                        </td>
+                        <td class="py-4 px-6 text-slate-400">
+                            {{ task.gratitude|truncatechars:50|default:"-" }}
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'nownext-update' task.pk %}"
+                                   class="w-8 h-8 bg-blue-900/30 hover:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-edit text-sm"></i>
+                                </a>
+                                <a href="{% url 'nownext-delete' task.pk %}"
+                                   class="w-8 h-8 bg-rose-900/30 hover:bg-rose-900/50 rounded-full flex items-center justify-center text-rose-400 hover:text-rose-300">
+                                    <i class="fas fa-trash text-sm"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-12 px-6 text-center">
+                            <div class="max-w-md mx-auto">
+                                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-tasks text-3xl text-slate-600"></i>
+                                </div>
+                                <h3 class="text-xl font-bold mb-2">No Tasks Created Yet</h3>
+                                <p class="text-slate-400 mb-6">Start planning your Now & Next tasks</p>
+                                <a href="{% url 'nownext-create' %}" class="btn-primary inline-block">
+                                    <i class="fas fa-plus mr-2"></i> Create Your First Task
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Delete Income{% endblock %}
+{% block header_title %}Delete Income Record{% endblock %}
+{% block header_subtitle %}Confirm deletion{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="card rounded-xl p-8">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-exclamation-triangle text-3xl text-rose-400"></i>
+            </div>
+
+            <h3 class="text-xl font-bold mb-4">Confirm Deletion</h3>
+            <p class="text-slate-400 mb-6">
+                Are you sure you want to delete the income record from
+                <span class="text-emerald-400 font-medium">{{ object.date|date:"F d, Y" }}</span>
+                for <span class="text-emerald-400 font-medium">${{ object.amount }}</span>?
+            </p>
+            <p class="text-sm text-slate-500 mb-8">
+                This action cannot be undone. All associated data will be permanently removed.
+            </p>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div class="flex items-center justify-center space-x-4">
+                    <a href="{% url 'income-list' %}"
+                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                    <button type="submit"
+                            class="btn-danger px-6 py-3">
+                        <i class="fas fa-trash mr-2"></i>Delete Permanently
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

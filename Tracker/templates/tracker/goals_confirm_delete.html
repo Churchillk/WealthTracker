@@ -1,0 +1,94 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Delete Goal{% endblock %}
+{% block header_title %}Delete Goal{% endblock %}
+{% block header_subtitle %}Confirm deletion{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="card rounded-xl p-8">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-bullseye text-3xl text-rose-400"></i>
+            </div>
+
+            <h3 class="text-xl font-bold mb-4">Delete Goal</h3>
+            <div class="bg-slate-800/50 rounded-lg p-6 mb-6">
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 {% if object.achieved %}bg-emerald-900/30{% else %}bg-amber-900/30{% endif %} rounded-full flex items-center justify-center mr-3">
+                                <i class="fas {% if object.achieved %}fa-trophy{% else %}fa-bullseye{% endif %} {% if object.achieved %}text-emerald-400{% else %}text-amber-400{% endif %}"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-lg">{{ object.goal_title }}</p>
+                                <span class="px-3 py-1 {% if object.achieved %}bg-emerald-900/30 text-emerald-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
+                                    {% if object.achieved %}Achieved{% else %}In Progress{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-slate-400 mb-1">Description:</p>
+                            <p class="text-slate-300">{{ object.goal_description|truncatechars:200 }}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-slate-400 mb-1">Set On:</p>
+                                <p class="text-slate-300">{{ object.date_set|date:"M d, Y" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-400 mb-1">Target Date:</p>
+                                <p class="text-slate-300">{{ object.end_date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-700">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-400">Progress:</span>
+                                <span class="text-sm {% if object.achieved %}text-emerald-400{% else %}text-amber-400{% endif %}">
+                                    {% if object.achieved %}100% Achieved{% else %}In Progress{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-rose-900/20 border border-rose-800 rounded-lg p-4 mb-8">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-rose-400 mt-1 mr-3"></i>
+                    <div>
+                        <p class="text-rose-300 font-medium mb-2">Warning: This action cannot be undone</p>
+                        <p class="text-sm text-rose-400">This goal will be permanently deleted from your vision board. All progress tracking will be lost.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div class="flex items-center justify-center space-x-4">
+                    <a href="{% url 'goals-list' %}"
+                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                    <button type="submit"
+                            class="btn-danger px-6 py-3 flex items-center">
+                        <i class="fas fa-trash mr-2"></i>Delete Goal
+                    </button>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-slate-800">
+                    <p class="text-sm text-slate-500">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Consider marking as achieved instead if you've completed this goal.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

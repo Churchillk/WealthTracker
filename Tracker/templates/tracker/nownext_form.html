@@ -1,0 +1,263 @@
+{% extends 'tracker/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Task{% endblock %}
+{% block header_title %}{% if form.instance.pk %}Edit Task{% else %}Add New Task {% endif %} {% endblock %}</h3>
+{% block header_subtitle %}{% if form.instance.pk %}Update task details{% else %}Plan your Now & Next task{% endif %}</p>{% endblock %}
+
+{% block extra_css %}
+<style>
+    .priority-option {
+        transition: all 0.3s ease;
+    }
+
+    .priority-option.active {
+        border-color: rgba(16, 185, 129, 0.5);
+        background: rgba(16, 185, 129, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card rounded-xl p-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h3 class="text-xl font-bold">
+                    <i class="fas fa-tasks text-emerald-400 mr-2"></i>
+                    {% if form.instance.pk %}Edit Task{% else %}Create New Task{% endif %}
+                </h3>
+                <p class="text-slate-400 text-sm mt-1">
+                    {% if form.instance.pk %}
+                    Last updated: {{ form.instance.date|date:"M d, Y" }}
+                    {% else %}
+                    Plan what needs to be done now and what comes next
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                    <i class="fas {% if form.instance.done %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
+                    {% if form.instance.done %}Completed{% else %}Active{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-8" id="taskForm">
+            {% csrf_token %}
+
+            <!-- Form Errors -->
+            {% if form.errors %}
+            <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                    <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                </div>
+                <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Section 1: Task Details -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                        <i class="fas fa-info-circle text-emerald-400"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold">Task Information</h4>
+                </div>
+
+                <!-- Date Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-calendar-alt mr-2"></i>Date & Time
+                    </label>
+                    {% render_field form.date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                    <p class="text-xs text-slate-500">When is this task scheduled for?</p>
+                </div>
+
+                <!-- Task Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-list-check mr-2"></i>What needs to be done?
+                    </label>
+                    {% render_field form.do class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Describe what needs to be accomplished..." %}
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs text-slate-500">Be specific about the task or action</p>
+                        <span id="doCharCount" class="text-xs text-slate-500">0/1000</span>
+                    </div>
+                </div>
+
+                <!-- Status Field -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-check-circle mr-2"></i>Status
+                    </label>
+                    <div class="flex items-center space-x-6">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            {% render_field form.done class="w-5 h-5 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" %}
+                            <span class="text-slate-300">Mark as completed</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Challenges & Considerations -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-amber-900/50 rounded-full flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-amber-400"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold">Challenges & Considerations</h4>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-road mr-2"></i>What challenges might you face?
+                    </label>
+                    {% render_field form.challenges class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="List any potential obstacles, risks, or considerations..." %}
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs text-slate-500">Identify potential roadblocks or concerns</p>
+                        <span id="challengesCharCount" class="text-xs text-slate-500">0/1000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Gratitude & Value -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                        <i class="fas fa-heart text-violet-400"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold">Gratitude & Value</h4>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-sparkles mr-2"></i>What value will this bring?
+                    </label>
+                    {% render_field form.gratitude class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Describe the benefits, value, or what you're grateful for..." %}
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs text-slate-500">Focus on the positive outcomes and benefits</p>
+                        <span id="gratitudeCharCount" class="text-xs text-slate-500">0/1000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="space-y-4">
+                <h4 class="text-lg font-semibold">Quick Actions</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setTodayDate()">
+                        <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
+                        <p class="font-medium">Today's Date</p>
+                        <p class="text-xs text-slate-400">Set to now</p>
+                    </button>
+
+                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="markCompleted()">
+                        <i class="fas fa-check-circle text-emerald-400 text-lg mb-2"></i>
+                        <p class="font-medium">Mark Complete</p>
+                        <p class="text-xs text-slate-400">Set as done</p>
+                    </button>
+
+                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
+                        <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
+                        <p class="font-medium">Clear Form</p>
+                        <p class="text-xs text-slate-400">Reset all fields</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="pt-6 border-t border-slate-800">
+                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                        <label for="addAnother" class="text-sm text-slate-400">Add another task after saving</label>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <a href="{% url 'nownext-list' %}"
+                           class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </a>
+                        <button type="submit"
+                                class="btn-primary px-8 py-3 flex items-center">
+                            <i class="fas fa-save mr-2"></i>
+                            {% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character counters
+    const doTextarea = document.querySelector('textarea[name="do"]');
+    const challengesTextarea = document.querySelector('textarea[name="challenges"]');
+    const gratitudeTextarea = document.querySelector('textarea[name="gratitude"]');
+
+    function setupCharCounter(textarea, counterId) {
+        if (textarea) {
+            const counter = document.getElementById(counterId);
+            textarea.addEventListener('input', function() {
+                const length = this.value.length;
+                counter.textContent = length + '/1000';
+                if (length > 900) {
+                    counter.classList.remove('text-slate-500');
+                    counter.classList.add('text-amber-400');
+                } else if (length > 980) {
+                    counter.classList.remove('text-amber-400');
+                    counter.classList.add('text-rose-400');
+                } else {
+                    counter.classList.remove('text-amber-400', 'text-rose-400');
+                    counter.classList.add('text-slate-500');
+                }
+            });
+            textarea.dispatchEvent(new Event('input'));
+        }
+    }
+
+    setupCharCounter(doTextarea, 'doCharCount');
+    setupCharCounter(challengesTextarea, 'challengesCharCount');
+    setupCharCounter(gratitudeTextarea, 'gratitudeCharCount');
+});
+
+function setTodayDate() {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 16);
+    const dateInput = document.querySelector('input[name="date"]');
+    dateInput.value = today;
+}
+
+function markCompleted() {
+    const doneCheckbox = document.querySelector('input[name="done"]');
+    doneCheckbox.checked = true;
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear all form fields?')) {
+        document.getElementById('taskForm').reset();
+
+        // Reset character counters
+        ['doCharCount', 'challengesCharCount', 'gratitudeCharCount'].forEach(id => {
+            const counter = document.getElementById(id);
+            if (counter) counter.textContent = '0/1000';
+        });
+    }
+}
+</script>
+{% endblock %}

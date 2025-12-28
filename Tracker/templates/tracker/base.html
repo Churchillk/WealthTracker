@@ -1,0 +1,236 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wealth Tracker - {% block title %}Dashboard{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --secondary: #8b5cf6;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --gold: #fbbf24;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .sidebar {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .table-container {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .table-row:hover {
+            background: rgba(51, 65, 85, 0.5);
+        }
+
+        .gold-text {
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+        }
+
+        .sidebar-link {
+            color: #cbd5e1;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-link:hover, .sidebar-link.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--primary);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="font-sans antialiased">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 flex-shrink-0 overflow-y-auto">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold gradient-text">
+                    <i class="fas fa-gem"></i> WealthTracker
+                </h1>
+                <div class="mt-6">
+                    <div class="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg">
+                        <div class="w-10 h-10 bg-gradient-to-r from-emerald-500 to-violet-500 rounded-full flex items-center justify-center">
+                            <span class="font-bold text-white">{{ request.user.username|first|upper }}</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Welcome, {{ request.user.username }}</p>
+                            <p class="text-sm text-slate-400">Premium Member</p>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="mt-8">
+                    <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.path == '/' %}active{% endif %}">
+                        <i class="fas fa-chart-line"></i> Dashboard
+                    </a>
+
+                    <p class="text-slate-400 text-xs uppercase tracking-wider font-semibold mt-6 mb-2">Finances</p>
+                    <a href="{% url 'income-list' %}" class="sidebar-link">
+                        <i class="fas fa-money-bill-wave"></i> Income
+                    </a>
+                    <a href="{% url 'expenses-list' %}" class="sidebar-link">
+                        <i class="fas fa-receipt"></i> Expenses
+                    </a>
+                    <a href="{% url 'incomesource-list' %}" class="sidebar-link">
+                        <i class="fas fa-hand-holding-usd"></i> Income Sources
+                    </a>
+
+                    <p class="text-slate-400 text-xs uppercase tracking-wider font-semibold mt-6 mb-2">Productivity</p>
+                    <a href="{% url 'nownext-list' %}" class="sidebar-link">
+                        <i class="fas fa-tasks"></i> Now & Next
+                    </a>
+                    <a href="{% url 'projects-list' %}" class="sidebar-link">
+                        <i class="fas fa-project-diagram"></i> Projects
+                    </a>
+                    <a href="{% url 'goals-list' %}" class="sidebar-link">
+                        <i class="fas fa-bullseye"></i> Goals
+                    </a>
+                    <a href="{% url 'event-list' %}" class="sidebar-link">
+                        <i class="fas fa-calendar-alt"></i> Events
+                    </a>
+
+                    <div class="mt-8 p-4 bg-gradient-to-r from-emerald-900/50 to-violet-900/50 rounded-lg">
+                        <p class="text-sm font-semibold">Wealth Insight</p>
+                        <p class="text-xs text-slate-300 mt-1">"The habit of saving is itself an education."</p>
+                    </div>
+
+                    <div class="mt-6">
+                        <a href="{% url 'logout' %}" class="sidebar-link text-rose-400 hover:text-rose-300">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Header -->
+            <header class="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+                <div class="flex items-center justify-between px-8 py-4">
+                    <div>
+                        <h2 class="text-xl font-semibold">{% block header_title %}Dashboard{% endblock %}</h2>
+                        <p class="text-sm text-slate-400">{% block header_subtitle %}Track your wealth journey{% endblock %}</p>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <i class="fas fa-bell text-slate-400 text-xl"></i>
+                            <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                        </div>
+                        <div class="h-8 w-px bg-slate-700"></div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm font-medium">{{ request.user.email }}</span>
+                            <div class="w-8 h-8 bg-gradient-to-r from-amber-500 to-rose-500 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="p-6">
+                {% if messages %}
+                <div class="mb-6">
+                    {% for message in messages %}
+                    <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-emerald-900/50 text-emerald-300 border border-emerald-800{% elif message.tags == 'error' %}bg-rose-900/50 text-rose-300 border border-rose-800{% else %}bg-slate-800 text-slate-300{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,149 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Delete Income Source{% endblock %}
+{% block header_title %}Delete Income Source{% endblock %}
+{% block header_subtitle %}Confirm deletion{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="card rounded-xl p-8">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-hand-holding-usd text-3xl text-rose-400"></i>
+            </div>
+
+            <h3 class="text-xl font-bold mb-4">Delete Income Source</h3>
+            <div class="bg-slate-800/50 rounded-lg p-6 mb-6">
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-emerald-900/30 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-hand-holding-usd text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-lg">{{ object.name }}</p>
+                                <p class="text-sm text-slate-400">{{ object.client }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-slate-400 mb-1">Start Date:</p>
+                                <p class="text-slate-300">{{ object.start_date|date:"M d, Y" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-400 mb-1">End Date:</p>
+                                <p class="text-slate-300">{{ object.end_date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-sm text-slate-400 mb-1">Estimated Worth:</p>
+                            <p class="text-2xl font-bold text-emerald-400">${{ object.worth }}</p>
+                        </div>
+
+                        {% if object.description %}
+                        <div class="pt-3 border-t border-slate-700">
+                            <p class="text-sm text-slate-400 mb-1">Description:</p>
+                            <p class="text-sm text-slate-300">{{ object.description|truncatechars:200 }}</p>
+                        </div>
+                        {% endif %}
+
+                        <div class="pt-3 border-t border-slate-700">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-slate-400">Status:</span>
+                                {% if object.end_date > now %}
+                                <span class="px-2 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                                    <i class="fas fa-check-circle mr-1"></i> Active
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-1 bg-rose-900/30 text-rose-400 rounded-full text-sm">
+                                    <i class="fas fa-times-circle mr-1"></i> Ended
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-rose-900/20 border border-rose-800 rounded-lg p-4 mb-8">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-rose-400 mt-1 mr-3"></i>
+                    <div>
+                        <p class="text-rose-300 font-medium mb-2">Critical Warning</p>
+                        <p class="text-sm text-rose-400">
+                            Deleting this income source will:
+                            <ul class="mt-2 space-y-1">
+                                <li class="flex items-start">
+                                    <i class="fas fa-times text-rose-400 mt-1 mr-2 text-xs"></i>
+                                    <span>Remove it from your portfolio worth (${{ object.worth }})</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-times text-rose-400 mt-1 mr-2 text-xs"></i>
+                                    <span>Break any links to income records from this source</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-times text-rose-400 mt=1 mr-2 text-xs"></i>
+                                    <span>Permanently delete all associated data</span>
+                                </li>
+                            </ul>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+
+                <!-- Confirmation Checkbox -->
+                <div class="bg-slate-800/50 rounded-lg p-4">
+                    <label class="flex items-start space-x-3 cursor-pointer">
+                        <input type="checkbox" name="confirm_delete" required
+                               class="w-5 h-5 bg-slate-800 border-slate-700 rounded focus:ring-rose-500 mt-1">
+                        <div>
+                            <p class="text-slate-300 font-medium">I understand the consequences</p>
+                            <p class="text-sm text-slate-400 mt-1">
+                                I confirm that I want to permanently delete this income source and understand that this action cannot be undone.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-center space-x-4">
+                    <a href="{% url 'incomesource-list' %}"
+                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                    <button type="submit"
+                            class="btn-danger px-6 py-3 flex items-center"
+                            id="deleteButton"
+                            disabled>
+                        <i class="fas fa-trash mr-2"></i>Delete Permanently
+                    </button>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-slate-800">
+                    <p class="text-sm text-slate-500">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Consider updating the end date instead if the source has simply concluded.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.querySelector('input[name="confirm_delete"]');
+    const deleteButton = document.getElementById('deleteButton');
+
+    confirmCheckbox.addEventListener('change', function() {
+        deleteButton.disabled = !this.checked;
+    });
+});
+</script>
+{% endblock %}

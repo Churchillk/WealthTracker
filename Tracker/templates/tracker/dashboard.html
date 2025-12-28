@@ -1,0 +1,321 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Wealth Overview{% endblock %}
+{% block header_title %}Wealth Dashboard{% endblock %}
+{% block header_subtitle %}Track, Analyze, Grow{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Fix for chart containers */
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+
+    .chart-container canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">Total Income</p>
+                    <h3 class="text-2xl font-bold text-emerald-400 mt-1">${{ quick_stats.total_income|floatformat:2 }}</h3>
+                </div>
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave text-emerald-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+                <p class="text-xs text-slate-400">This month</p>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">Total Expenses</p>
+                    <h3 class="text-2xl font-bold text-rose-400 mt-1">${{ quick_stats.total_expenses|floatformat:2 }}</h3>
+                </div>
+                <div class="w-12 h-12 bg-rose-900/50 rounded-full flex items-center justify-center">
+                    <i class="fas fa-receipt text-rose-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+                <p class="text-xs text-slate-400">This month</p>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">Net Balance</p>
+                    <h3 class="text-2xl font-bold {% if quick_stats.balance >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %} mt-1">
+                        ${{ quick_stats.balance|floatformat:2 }}
+                    </h3>
+                </div>
+                <div class="w-12 h-12 {% if quick_stats.balance >= 0 %}bg-emerald-900/50{% else %}bg-rose-900/50{% endif %} rounded-full flex items-center justify-center">
+                    <i class="fas fa-balance-scale {% if quick_stats.balance >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %} text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+                <p class="text-xs text-slate-400">Current</p>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">Active Projects</p>
+                    <h3 class="text-2xl font-bold text-violet-400 mt-1">{{ quick_stats.active_projects }}</h3>
+                </div>
+                <div class="w-12 h-12 bg-violet-900/50 rounded-full flex items-center justify-center">
+                    <i class="fas fa-project-diagram text-violet-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+                <p class="text-xs text-slate-400">In Progress</p>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">Upcoming Events</p>
+                    <h3 class="text-2xl font-bold text-amber-400 mt-1">{{ quick_stats.upcoming_events }}</h3>
+                </div>
+                <div class="w-12 h-12 bg-amber-900/50 rounded-full flex items-center justify-center">
+                    <i class="fas fa-calendar-alt text-amber-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+                <p class="text-xs text-slate-400">Next 30 days</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Income Chart -->
+        <div class="card p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold">Income Trend</h3>
+                <span class="text-sm text-emerald-400"><i class="fas fa-arrow-up"></i> 12% growth</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="incomeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Expenses Chart -->
+        <div class="card p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold">Expenses by Category</h3>
+                <span class="text-sm text-rose-400"><i class="fas fa-chart-pie"></i> Distribution</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="expensesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Recent Income -->
+        <div class="card p-6 rounded-xl">
+            <h3 class="text-lg font-semibold mb-4">Recent Income</h3>
+            <div class="space-y-3">
+                {% for income in recent_incomes %}
+                <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                    <div>
+                        <p class="font-medium">{{ income.source.name|default:"Direct Income" }}</p>
+                        <p class="text-sm text-slate-400">{{ income.date|date:"M d, Y" }}</p>
+                    </div>
+                    <span class="font-bold text-emerald-400">${{ income.amount }}</span>
+                </div>
+                {% empty %}
+                <p class="text-slate-400 text-center py-4">No recent income</p>
+                {% endfor %}
+            </div>
+            <a href="{% url 'income-list' %}" class="mt-4 text-emerald-400 hover:text-emerald-300 text-sm font-medium flex items-center">
+                View all income <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+
+        <!-- Recent Expenses -->
+        <div class="card p-6 rounded-xl">
+            <h3 class="text-lg font-semibold mb-4">Recent Expenses</h3>
+            <div class="space-y-3">
+                {% for expense in recent_expenses %}
+                <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                    <div>
+                        <p class="font-medium">{{ expense.name }}</p>
+                        <p class="text-sm text-slate-400">{{ expense.date|date:"M d, Y" }}</p>
+                    </div>
+                    <span class="font-bold text-rose-400">${{ expense.worth }}</span>
+                </div>
+                {% empty %}
+                <p class="text-slate-400 text-center py-4">No recent expenses</p>
+                {% endfor %}
+            </div>
+            <a href="{% url 'expenses-list' %}" class="mt-4 text-rose-400 hover:text-rose-300 text-sm font-medium flex items-center">
+                View all expenses <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="card p-6 rounded-xl">
+            <h3 class="text-lg font-semibold mb-4">Upcoming Events</h3>
+            <div class="space-y-3">
+                {% for event in upcoming_events_list %}
+                <div class="p-3 bg-slate-800/50 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <p class="font-medium">{{ event.title }}</p>
+                        <span class="text-xs px-2 py-1 bg-violet-900/50 text-violet-300 rounded-full">{{ event.category }}</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mt-1">{{ event.start_date|date:"M d, Y" }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ event.location }}</p>
+                </div>
+                {% empty %}
+                <p class="text-slate-400 text-center py-4">No upcoming events</p>
+                {% endfor %}
+            </div>
+            <a href="{% url 'event-list' %}" class="mt-4 text-violet-400 hover:text-violet-300 text-sm font-medium flex items-center">
+                View all events <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Income Chart
+    const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+    const incomeChart = new Chart(incomeCtx, {
+        type: 'line',
+        data: {
+            labels: JSON.parse('{{ chart_data.income_labels|escapejs }}'),
+            datasets: [{
+                label: 'Income',
+                data: JSON.parse('{{ chart_data.income_data|escapejs }}'),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#cbd5e1'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Expenses Chart
+    const expensesCtx = document.getElementById('expensesChart').getContext('2d');
+    const expensesChart = new Chart(expensesCtx, {
+        type: 'bar',
+        data: {
+            labels: JSON.parse('{{ chart_data.expense_labels|escapejs }}'),
+            datasets: [{
+                label: 'Expenses',
+                data: JSON.parse('{{ chart_data.expense_data|escapejs }}'),
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.7)',
+                    'rgba(59, 130, 246, 0.7)',
+                    'rgba(245, 158, 11, 0.7)'
+                ],
+                borderColor: [
+                    'rgb(239, 68, 68)',
+                    'rgb(59, 130, 246)',
+                    'rgb(245, 158, 11)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                    labels: {
+                        color: '#cbd5e1'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#94a3b8'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        incomeChart.resize();
+        expensesChart.resize();
+    });
+});
+</script>
+{% endblock %}
