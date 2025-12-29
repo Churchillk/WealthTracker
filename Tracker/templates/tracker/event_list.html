@@ -16,6 +16,7 @@
         <div class="flex items-center space-x-4">
             <div class="relative">
                 <input type="text"
+                       id="searchInput"
                        placeholder="Search events..."
                        class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pl-10 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
@@ -82,14 +83,14 @@
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold">Calendar Overview</h3>
             <div class="flex items-center space-x-4">
-                <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">
+                <button id="prevMonth" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <span class="font-medium">December 2024</span>
-                <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">
+                <span id="currentMonth" class="font-medium">{{ current_date|date:"F Y" }}</span>
+                <button id="nextMonth" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">
                     <i class="fas fa-chevron-right"></i>
                 </button>
-                <button class="px-4 py-2 bg-emerald-900/30 text-emerald-400 rounded-lg">
+                <button id="todayBtn" class="px-4 py-2 bg-emerald-900/30 text-emerald-400 rounded-lg">
                     Today
                 </button>
             </div>
@@ -105,23 +106,8 @@
             <div class="text-center text-slate-400 font-medium py-2">Sat</div>
         </div>
 
-        <div class="grid grid-cols-7 gap-2">
-            {% for day in "12345678910111213141516171819202122232425262728293031" %}
-            <div class="aspect-square bg-slate-800/50 rounded-lg p-2 hover:bg-slate-800 cursor-pointer">
-                <div class="flex justify-between items-start">
-                    <span class="text-sm {% if day == '15' %}font-bold text-emerald-400{% else %}text-slate-300{% endif %}">{{ day }}</span>
-                    {% if day in "5,12,19,26" %}
-                    <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                    {% endif %}
-                </div>
-                {% if day == '15' %}
-                <div class="mt-2 space-y-1">
-                    <div class="text-xs bg-emerald-900/30 text-emerald-400 p-1 rounded">Tech Conference</div>
-                    <div class="text-xs bg-blue-900/30 text-blue-400 p-1 rounded">Meeting</div>
-                </div>
-                {% endif %}
-            </div>
-            {% endfor %}
+        <div id="calendarGrid" class="grid grid-cols-7 gap-2">
+            <!-- Calendar days will be populated by JavaScript -->
         </div>
     </div>
 
@@ -282,7 +268,7 @@
                         <th class="py-4 px-6 text-left">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-800">
+                <tbody id="eventsTableBody" class="divide-y divide-slate-800">
                     {% for event in events %}
                     <tr class="table-row">
                         <td class="py-4 px-6">
@@ -371,12 +357,172 @@
 
 {% block extra_js %}
 <script>
-function markAttended(eventId) {
-    if (confirm('Mark this event as attended?')) {
-        // You would typically make an AJAX call here
-        // For now, we'll show a message
-        alert('Event marked as attended! Update this function to make an actual API call.');
+// Calendar data from Django context
+const eventsData = [
+    {% for event in events %}
+    {
+        id: {{ event.pk }},
+        title: "{{ event.title }}",
+        start_date: "{{ event.start_date|date:'Y-m-d' }}",
+        category: "{{ event.category }}",
+        color: "{% if event.category == 'Hackathon' %}violet{% elif event.category == 'AI' %}emerald{% elif event.category == 'Blockchain' %}amber{% else %}blue{% endif %}"
+    },
+    {% endfor %}
+];
+
+let currentDate = new Date();
+let currentYear = currentDate.getFullYear();
+let currentMonth = currentDate.getMonth();
+
+function renderCalendar(year, month) {
+    const calendarGrid = document.getElementById('calendarGrid');
+    const currentMonthElement = document.getElementById('currentMonth');
+
+    // Clear previous calendar
+    calendarGrid.innerHTML = '';
+
+    // Update month header
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    currentMonthElement.textContent = `${monthNames[month]} ${year}`;
+
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const totalDays = lastDay.getDate();
+
+    // Get day of week for first day (0 = Sunday, 6 = Saturday)
+    const firstDayOfWeek = firstDay.getDay();
+
+    // Add empty cells for days before first day of month
+    for (let i = 0; i < firstDayOfWeek; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'aspect-square bg-slate-900/20 rounded-lg p-2 opacity-50';
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    // Add cells for each day of the month
+    for (let day = 1; day <= totalDays; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'aspect-square bg-slate-800/50 rounded-lg p-2 hover:bg-slate-800 cursor-pointer transition-colors';
+
+        // Check if this is today
+        const isToday = day === currentDate.getDate() &&
+                       month === currentDate.getMonth() &&
+                       year === currentDate.getFullYear();
+
+        // Check for events on this day
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayEvents = eventsData.filter(event => event.start_date === dateStr);
+
+        dayCell.innerHTML = `
+            <div class="flex justify-between items-start h-full">
+                <span class="text-sm ${isToday ? 'font-bold text-emerald-400' : 'text-slate-300'}">${day}</span>
+                ${dayEvents.length > 0 ? `<span class="w-2 h-2 bg-${dayEvents[0].color}-500 rounded-full"></span>` : ''}
+            </div>
+            ${dayEvents.length > 0 ? `
+                <div class="mt-2 space-y-1">
+                    ${dayEvents.slice(0, 2).map(event => `
+                        <div class="text-xs bg-${event.color}-900/30 text-${event.color}-400 p-1 rounded truncate" title="${event.title}">
+                            ${event.title}
+                        </div>
+                    `).join('')}
+                    ${dayEvents.length > 2 ? `<div class="text-xs text-slate-500">+${dayEvents.length - 2} more</div>` : ''}
+                </div>
+            ` : ''}
+        `;
+
+        // Add click event to view day's events
+        dayCell.onclick = () => {
+            if (dayEvents.length > 0) {
+                alert(`Events for ${dateStr}:\n${dayEvents.map(e => `• ${e.title}`).join('\n')}`);
+            }
+        };
+
+        calendarGrid.appendChild(dayCell);
     }
 }
+
+// Calendar navigation
+document.getElementById('prevMonth').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+    }
+    renderCalendar(currentYear, currentMonth);
+});
+
+document.getElementById('nextMonth').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+    }
+    renderCalendar(currentYear, currentMonth);
+});
+
+document.getElementById('todayBtn').addEventListener('click', () => {
+    currentDate = new Date();
+    currentYear = currentDate.getFullYear();
+    currentMonth = currentDate.getMonth();
+    renderCalendar(currentYear, currentMonth);
+});
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#eventsTableBody tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Mark attended function
+function markAttended(eventId) {
+    if (confirm('Mark this event as attended?')) {
+        fetch(`/event/${eventId}/mark-attended/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error marking event as attended.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error marking event as attended.');
+        });
+    }
+}
+
+// Utility function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Initial render
+renderCalendar(currentYear, currentMonth);
 </script>
 {% endblock %}

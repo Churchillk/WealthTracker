@@ -61,8 +61,9 @@ class ProjectsForm(forms.ModelForm):
 class GoalsForm(forms.ModelForm):
     class Meta:
         model = Goals
-        fields = ['goal_title', 'goal_description', 'end_date', 'achieved']
+        fields = ['goal_title', 'goal_description', 'date_set', 'end_date', 'achieved']
         widgets = {
+            'date_set': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'goal_description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }

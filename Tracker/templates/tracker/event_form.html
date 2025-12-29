@@ -18,238 +18,832 @@
     .duration-preview {
         background: linear-gradient(90deg, #10b981 0%, #8b5cf6 100%);
     }
+
+    .time-slot {
+        transition: all 0.2s ease;
+    }
+
+    .time-slot:hover {
+        transform: scale(1.05);
+    }
+
+    .weather-icon {
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
+    }
+
+    .conflict-indicator {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .location-type-btn {
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .location-type-btn.active {
+        border-color: var(--primary);
+    }
+
+    .calendar-mini {
+        border-spacing: 2px;
+    }
+
+    .calendar-mini td {
+        width: 28px;
+        height: 28px;
+        text-align: center;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .calendar-mini td:hover:not(.disabled) {
+        background: rgba(16, 185, 129, 0.2);
+    }
+
+    .calendar-mini td.selected {
+        background: var(--primary);
+        color: white;
+        font-weight: bold;
+    }
+
+    .calendar-mini td.today {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--primary);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="card rounded-xl p-8">
-        <div class="flex items-center justify-between mb-8">
-            <div>
-                <h3 class="text-xl font-bold">
-                    <i class="fas fa-calendar-alt text-emerald-400 mr-2"></i>
-                    {% if form.instance.pk %}Edit Event{% else %}Create New Event{% endif %}
-                </h3>
-                <p class="text-slate-400 text-sm mt-1">
-                    {% if form.instance.pk %}
-                    Scheduled: {{ form.instance.start_date|date:"M d, Y" }}
-                    {% else %}
-                    Plan your next important event or appointment
+<div class="max-w-6xl mx-auto">
+    <!-- Breadcrumb Navigation -->
+    <div class="mb-6">
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'dashboard' %}" class="inline-flex items-center text-sm text-slate-400 hover:text-white">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-slate-600 mx-2"></i>
+                        <a href="{% url 'event-list' %}" class="ml-1 text-sm text-slate-400 hover:text-white">Events</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-slate-600 mx-2"></i>
+                        <span class="ml-1 text-sm text-emerald-400 font-medium">
+                            {% if form.instance.pk %}Edit Event{% else %}New Event{% endif %}
+                        </span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Form Column -->
+        <div class="lg:col-span-2">
+            <div class="card rounded-xl p-8">
+                <!-- Form Header -->
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-calendar-alt text-emerald-400 mr-2"></i>
+                            {% if form.instance.pk %}Edit Event{% else %}Create New Event{% endif %}
+                        </h3>
+                        <p class="text-slate-400 text-sm mt-1">
+                            {% if form.instance.pk %}
+                            Scheduled: {{ form.instance.start_date|date:"M d, Y • h:i A" }} |
+                            Last updated: {% now "M d, Y" %}
+                            {% else %}
+                            Plan your next important event or appointment
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="px-3 py-1 {% if form.instance.attended %}bg-blue-900/30 text-blue-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
+                            <i class="fas {% if form.instance.attended %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
+                            {% if form.instance.attended %}Attended{% else %}Scheduled{% endif %}
+                        </span>
+                        {% if form.instance.pk %}
+                        <div class="relative group">
+                            <button class="w-10 h-10 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center">
+                                <i class="fas fa-ellipsis-v text-slate-400"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm"><i class="fas fa-copy mr-2"></i>Duplicate Event</a>
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm"><i class="fas fa-share-alt mr-2"></i>Share Event</a>
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm text-rose-400"><i class="fas fa-bell-slash mr-2"></i>Mute Reminders</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Event Conflict Checker -->
+                <div id="conflictAlert" class="hidden mb-6 p-4 bg-rose-900/50 border border-rose-800 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                        <div class="flex-1">
+                            <h4 class="text-rose-300 font-medium">Potential Schedule Conflict!</h4>
+                            <p class="text-sm text-rose-400 mt-1" id="conflictDetails"></p>
+                        </div>
+                        <button onclick="dismissConflict()" class="text-rose-400 hover:text-rose-300">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Container -->
+                <form method="post" class="space-y-8" id="eventForm">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                            <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                        </div>
+                        <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                     {% endif %}
-                </p>
-            </div>
-            <div>
-                <span class="px-3 py-1 {% if form.instance.attended %}bg-blue-900/30 text-blue-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
-                    <i class="fas {% if form.instance.attended %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
-                    {% if form.instance.attended %}Attended{% else %}Scheduled{% endif %}
-                </span>
+
+                    <!-- Section 1: Event Details -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-info-circle text-emerald-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Event Details</h4>
+                            </div>
+                            <button type="button" onclick="generateSmartTitle()" class="text-sm text-violet-400 hover:text-violet-300 flex items-center">
+                                <i class="fas fa-magic mr-2"></i>AI Suggestion
+                            </button>
+                        </div>
+
+                        <!-- Title Field -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-heading mr-2"></i>Event Title
+                                </label>
+                                <span id="titleStrength" class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-400">Weak</span>
+                            </div>
+                            {% render_field form.title class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Enter event title" id="eventTitle" %}
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-slate-500">Be specific and descriptive</p>
+                                <span id="titleCharCount" class="text-xs text-slate-500">0/100</span>
+                            </div>
+                        </div>
+
+                        <!-- Host Field -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-user-friends mr-2"></i>Host/Organizer
+                            </label>
+                            <div class="relative">
+                                {% render_field form.host class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Who is hosting this event?" id="eventHost" %}
+                                <i class="fas fa-users text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                            </div>
+                            <p class="text-xs text-slate-500">Company, organization, or individual hosting</p>
+                        </div>
+
+                        <!-- Category Field -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-tag mr-2"></i>Event Category
+                                </label>
+                                <button type="button" onclick="showAllCategories()" class="text-sm text-slate-400 hover:text-slate-300">
+                                    View All
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                <button type="button" onclick="setCategory('Hackathon')" class="category-option p-4 bg-violet-900/20 hover:bg-violet-900/30 border border-violet-800/30 rounded-lg text-center">
+                                    <i class="fas fa-code text-violet-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Hackathon</p>
+                                    <p class="text-xs text-slate-400 mt-1">Coding, Tech</p>
+                                </button>
+                                <button type="button" onclick="setCategory('AI')" class="category-option p-4 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
+                                    <i class="fas fa-brain text-emerald-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">AI & ML</p>
+                                    <p class="text-xs text-slate-400 mt-1">Machine Learning</p>
+                                </button>
+                                <button type="button" onclick="setCategory('Blockchain')" class="category-option p-4 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center">
+                                    <i class="fas fa-link text-amber-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Blockchain</p>
+                                    <p class="text-xs text-slate-400 mt-1">Crypto, Web3</p>
+                                </button>
+                                <button type="button" onclick="setCategory('Cybersecurity')" class="category-option p-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
+                                    <i class="fas fa-shield-alt text-blue-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Security</p>
+                                    <p class="text-xs text-slate-400 mt-1">Cybersecurity</p>
+                                </button>
+                                <button type="button" onclick="setCategory('Networking')" class="category-option p-4 bg-cyan-900/20 hover:bg-cyan-900/30 border border-cyan-800/30 rounded-lg text-center">
+                                    <i class="fas fa-network-wired text-cyan-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Networking</p>
+                                    <p class="text-xs text-slate-400 mt-1">Meetups, Conferences</p>
+                                </button>
+                            </div>
+                            <input type="hidden" id="categoryInput" name="category" value="{{ form.instance.category|default:'Hackathon' }}">
+                        </div>
+
+                        <!-- Smart Suggestions -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <button type="button" onclick="applySuggestion('conference')" class="smart-suggestion p-3 bg-emerald-900/10 hover:bg-emerald-900/20 border border-emerald-800/30 rounded-lg text-left">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-emerald-400 font-medium">Conference</span>
+                                    <i class="fas fa-users text-emerald-400"></i>
+                                </div>
+                                <p class="text-sm text-slate-300">"Tech Conference 2024 - Future of AI"</p>
+                            </button>
+                            <button type="button" onclick="applySuggestion('workshop')" class="smart-suggestion p-3 bg-blue-900/10 hover:bg-blue-900/20 border border-blue-800/30 rounded-lg text-left">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-blue-400 font-medium">Workshop</span>
+                                    <i class="fas fa-chalkboard-teacher text-blue-400"></i>
+                                </div>
+                                <p class="text-sm text-slate-300">"Blockchain Development Workshop"</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Date & Time -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-clock text-blue-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Date & Time</h4>
+                            </div>
+                            <button type="button" onclick="checkAvailability()" class="text-sm text-cyan-400 hover:text-cyan-300 flex items-center">
+                                <i class="fas fa-calendar-check mr-2"></i>Check Availability
+                            </button>
+                        </div>
+
+                        <!-- Quick Date Selector -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-slate-300">Quick Date Selection</span>
+                                <div class="flex space-x-2">
+                                    <button onclick="selectToday()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">Today</button>
+                                    <button onclick="selectTomorrow()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">Tomorrow</button>
+                                    <button onclick="selectNextWeek()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs">Next Week</button>
+                                </div>
+                            </div>
+                            <div class="calendar-mini mx-auto mb-4">
+                                <!-- Calendar will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Start Date Field -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-play-circle mr-2"></i>Start Date & Time
+                                </label>
+                                <div class="relative">
+                                    {% render_field form.start_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" id="startDateTime" %}
+                                    <i class="fas fa-calendar text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                                </div>
+                                <p class="text-xs text-slate-500">When does the event begin?</p>
+                            </div>
+
+                            <!-- End Date Field -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-flag-checkered mr-2"></i>End Date & Time
+                                </label>
+                                <div class="relative">
+                                    {% render_field form.end_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" id="endDateTime" %}
+                                    <i class="fas fa-calendar-day text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                                </div>
+                                <p class="text-xs text-slate-500">When does the event conclude?</p>
+                            </div>
+                        </div>
+
+                        <!-- Time Slots -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-hourglass-half mr-2"></i>Quick Time Slots
+                            </label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <button type="button" onclick="setTimeSlot('09:00', '10:00')" class="time-slot p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <div class="font-medium">9 AM</div>
+                                    <div class="text-xs text-slate-400">1 hour</div>
+                                </button>
+                                <button type="button" onclick="setTimeSlot('14:00', '16:00')" class="time-slot p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <div class="font-medium">2 PM</div>
+                                    <div class="text-xs text-slate-400">2 hours</div>
+                                </button>
+                                <button type="button" onclick="setTimeSlot('18:00', '20:00')" class="time-slot p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <div class="font-medium">6 PM</div>
+                                    <div class="text-xs text-slate-400">2 hours</div>
+                                </button>
+                                <button type="button" onclick="setTimeSlot('10:00', '12:00')" class="time-slot p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <div class="font-medium">10 AM</div>
+                                    <div class="text-xs text-slate-400">2 hours</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Duration & Timing -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Duration Preview -->
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-sm text-slate-400">Event Duration</span>
+                                    <span id="durationValue" class="text-lg font-bold text-emerald-400">-</span>
+                                </div>
+                                <div class="relative h-3 bg-slate-700 rounded-full overflow-hidden mb-3">
+                                    <div id="durationPreview" class="duration-preview h-3 rounded-full absolute left-0" style="width: 50%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-500">
+                                    <span id="startTimePreview">-</span>
+                                    <span id="endTimePreview">-</span>
+                                </div>
+                            </div>
+
+                            <!-- Time Zone Info -->
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm text-slate-400">Time Zone</span>
+                                    <span class="text-sm text-emerald-400" id="timeZone">Auto-detected</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex items-center text-sm">
+                                        <i class="fas fa-globe text-slate-400 mr-2"></i>
+                                        <span id="currentTimeZone">{{ TIME_ZONE }}</span>
+                                    </div>
+                                    <div class="flex items-center text-sm">
+                                        <i class="fas fa-clock text-slate-400 mr-2"></i>
+                                        <span id="currentLocalTime">{% now "h:i A" %}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- All Day Event -->
+                        <div class="space-y-3">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" id="allDayEvent" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                <span class="text-sm text-slate-300">All-day event</span>
+                            </label>
+                            <p class="text-xs text-slate-500">Check if this event lasts the entire day</p>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Location & Venue -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-map-marker-alt text-violet-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Location & Venue</h4>
+                            </div>
+                            <button type="button" onclick="detectLocation()" class="text-sm text-amber-400 hover:text-amber-300 flex items-center">
+                                <i class="fas fa-location-arrow mr-2"></i>Auto-detect
+                            </button>
+                        </div>
+
+                        <!-- Location Type -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-map-pin mr-2"></i>Location Type
+                            </label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <button type="button" onclick="setLocationType('physical')" class="location-type-btn p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <i class="fas fa-building text-blue-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Physical</p>
+                                    <p class="text-xs text-slate-400">Venue, Office</p>
+                                </button>
+                                <button type="button" onclick="setLocationType('virtual')" class="location-type-btn p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <i class="fas fa-video text-emerald-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Virtual</p>
+                                    <p class="text-xs text-slate-400">Online, Zoom</p>
+                                </button>
+                                <button type="button" onclick="setLocationType('hybrid')" class="location-type-btn p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <i class="fas fa-sync text-purple-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Hybrid</p>
+                                    <p class="text-xs text-slate-400">Both</p>
+                                </button>
+                            </div>
+                            <input type="hidden" id="locationType" value="physical">
+                        </div>
+
+                        <!-- Location Field -->
+                        <div class="space-y-3" id="locationSection">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-map mr-2"></i>Location/Venue
+                            </label>
+                            <div class="relative">
+                                {% render_field form.location class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Enter event location, venue, or virtual meeting link..." id="eventLocation" %}
+                                <i class="fas fa-location-dot text-slate-500 absolute left-3 top-3"></i>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="insertMeetingLink()" class="text-xs text-blue-400 hover:text-blue-300">
+                                        <i class="fas fa-link mr-1"></i>Insert Zoom
+                                    </button>
+                                    <button type="button" onclick="insertGoogleMeet()" class="text-xs text-emerald-400 hover:text-emerald-300">
+                                        <i class="fas fa-video mr-1"></i>Insert Meet
+                                    </button>
+                                </div>
+                                <span id="locationCharCount" class="text-xs text-slate-500">0/500</span>
+                            </div>
+                        </div>
+
+                        <!-- Map Preview (placeholder) -->
+                        <div id="mapPreview" class="hidden bg-slate-800/50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-slate-300">Location Preview</span>
+                                <button onclick="openInMaps()" class="text-xs text-emerald-400 hover:text-emerald-300">
+                                    <i class="fas fa-external-link-alt mr-1"></i>Open Maps
+                                </button>
+                            </div>
+                            <div class="h-32 bg-slate-700 rounded flex items-center justify-center">
+                                <i class="fas fa-map text-3xl text-slate-600"></i>
+                            </div>
+                        </div>
+
+                        <!-- Weather Forecast -->
+                        <div id="weatherInfo" class="hidden bg-slate-800/50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-slate-300">Weather Forecast</span>
+                                <span class="text-xs text-slate-400" id="weatherDate">-</span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="weather-icon text-3xl text-cyan-400">
+                                    <i class="fas fa-sun"></i>
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-bold text-white" id="weatherTemp">-°C</div>
+                                    <div class="text-sm text-slate-400" id="weatherCondition">-</div>
+                                </div>
+                                <div class="flex-1 text-right">
+                                    <div class="text-sm text-slate-300">Chance of rain: <span id="rainChance" class="text-cyan-400">-</span></div>
+                                    <div class="text-sm text-slate-300">Wind: <span id="windSpeed" class="text-cyan-400">- km/h</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Additional Details -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-cyan-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-list-alt text-cyan-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Additional Details</h4>
+                        </div>
+
+                        <!-- Attended Field -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-check-circle mr-2"></i>Attendance Status
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs text-slate-400">Confidence:</span>
+                                    <span id="attendanceConfidence" class="text-xs font-medium text-emerald-400">85%</span>
+                                </div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <div class="flex items-center space-x-6">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <div class="relative">
+                                            {% render_field form.attended class="sr-only peer" id="attendedCheckbox" %}
+                                            <div class="w-12 h-6 bg-slate-700 peer-checked:bg-emerald-500 rounded-full peer"></div>
+                                            <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition peer-checked:transform peer-checked:translate-x-6"></div>
+                                        </div>
+                                        <span class="text-slate-300">Mark as attended</span>
+                                    </label>
+                                    <div class="flex-1">
+                                        <div class="h-1 bg-slate-700 rounded-full overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full" style="width: 85%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-3">Check this after you've attended the event. You can also add notes about your experience.</p>
+                            </div>
+                        </div>
+
+                        <!-- Event Notes -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-sticky-note mr-2"></i>Event Notes
+                            </label>
+                            <textarea class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Add notes, agenda items, or preparation details..."></textarea>
+                            <div class="flex justify-between">
+                                <p class="text-xs text-slate-500">Private notes for your reference</p>
+                                <button type="button" onclick="addAgendaItem()" class="text-xs text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-plus mr-1"></i>Add Agenda Item
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Reminders & Notifications -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-bell mr-2"></i>Reminders
+                            </label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <label class="flex items-center space-x-2 p-2 bg-slate-800/50 rounded">
+                                    <input type="checkbox" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm">15 min before</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2 bg-slate-800/50 rounded">
+                                    <input type="checkbox" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm">1 hour before</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2 bg-slate-800/50 rounded">
+                                    <input type="checkbox" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm">1 day before</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2 bg-slate-800/50 rounded">
+                                    <input type="checkbox" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm">Custom</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Event Color -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-palette mr-2"></i>Event Color
+                            </label>
+                            <div class="flex space-x-2">
+                                <button onclick="setEventColor('#10b981')" class="w-8 h-8 bg-emerald-500 rounded-full border-2 border-transparent hover:border-white"></button>
+                                <button onclick="setEventColor('#8b5cf6')" class="w-8 h-8 bg-violet-500 rounded-full border-2 border-transparent hover:border-white"></button>
+                                <button onclick="setEventColor('#3b82f6')" class="w-8 h-8 bg-blue-500 rounded-full border-2 border-transparent hover:border-white"></button>
+                                <button onclick="setEventColor('#f59e0b')" class="w-8 h-8 bg-amber-500 rounded-full border-2 border-transparent hover:border-white"></button>
+                                <button onclick="setEventColor('#ef4444')" class="w-8 h-8 bg-rose-500 rounded-full border-2 border-transparent hover:border-white"></button>
+                            </div>
+                            <input type="hidden" id="eventColor" value="#10b981">
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Integration & Links -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-amber-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-link text-amber-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Integration & Links</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-project-diagram mr-2"></i>Related Project
+                                </label>
+                                <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                    <option value="">Link to a project...</option>
+                                    <option value="1">Wealth Tracker App</option>
+                                    <option value="2">Portfolio Website</option>
+                                    <option value="3">Investment Research</option>
+                                </select>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-bullseye mr-2"></i>Related Goal
+                                </label>
+                                <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                    <option value="">Link to a goal...</option>
+                                    <option value="1">Learn Python</option>
+                                    <option value="2">Network with 50+ people</option>
+                                    <option value="3">Complete certification</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Attachments -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-paperclip mr-2"></i>Attachments
+                            </label>
+                            <div class="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-slate-600 mb-3"></i>
+                                <p class="text-slate-400 mb-2">Drop files here or click to upload</p>
+                                <p class="text-xs text-slate-500">Supports PDF, DOC, XLS, JPG, PNG up to 10MB</p>
+                                <input type="file" multiple class="hidden" id="fileUpload">
+                                <button type="button" onclick="document.getElementById('fileUpload').click()" class="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">
+                                    <i class="fas fa-upload mr-2"></i>Browse Files
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="space-y-6">
+                        <h4 class="text-lg font-semibold">Quick Actions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <button type="button" onclick="setStartToday()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">Start Today</p>
+                                <p class="text-xs text-slate-400">Set start to now</p>
+                            </button>
+
+                            <button type="button" onclick="setEndNextHour()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-hourglass-end text-violet-400 text-lg mb-2"></i>
+                                <p class="font-medium">1 Hour Duration</p>
+                                <p class="text-xs text-slate-400">Ends in 1 hour</p>
+                            </button>
+
+                            <button type="button" onclick="setAllDay()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-sun text-amber-400 text-lg mb-2"></i>
+                                <p class="font-medium">All Day</p>
+                                <p class="text-xs text-slate-400">Full day event</p>
+                            </button>
+
+                            <button type="button" onclick="clearForm()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
+                                <p class="font-medium">Clear Form</p>
+                                <p class="text-xs text-slate-400">Reset all fields</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="pt-6 border-t border-slate-800">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm text-slate-400">Add another event after saving</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="setReminder" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" checked>
+                                    <span class="text-sm text-slate-400">Set reminders</span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <a href="{% url 'event-list' %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                <button type="submit"
+                                        class="btn-primary px-8 py-3 flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if form.instance.pk %}Update Event{% else %}Create Event{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <form method="post" class="space-y-8" id="eventForm">
-            {% csrf_token %}
-
-            <!-- Form Errors -->
-            {% if form.errors %}
-            <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
-                <div class="flex items-center mb-3">
-                    <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
-                    <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
-                </div>
-                <ul class="mt-2 text-sm text-rose-400 space-y-1">
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                            <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <!-- Section 1: Event Details -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-info-circle text-emerald-400"></i>
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Event Preview -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Event Preview</h4>
+                <div class="space-y-4">
+                    <div id="previewTitle" class="text-lg font-bold text-emerald-400">Event Title</div>
+                    <div class="flex items-center space-x-2 text-sm text-slate-400">
+                        <i class="fas fa-clock"></i>
+                        <span id="previewDateTime">Date & Time</span>
                     </div>
-                    <h4 class="text-lg font-semibold">Event Details</h4>
-                </div>
-
-                <!-- Title Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-heading mr-2"></i>Event Title
-                    </label>
-                    {% render_field form.title class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Enter event title" %}
-                    <p class="text-xs text-slate-500">Give your event a clear, descriptive name</p>
-                </div>
-
-                <!-- Host Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-user-friends mr-2"></i>Host/Organizer
-                    </label>
-                    {% render_field form.host class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Who is hosting this event?" %}
-                    <p class="text-xs text-slate-500">Company, organization, or individual hosting</p>
-                </div>
-
-                <!-- Category Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-tag mr-2"></i>Event Category
-                    </label>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <button type="button" onclick="setCategory('Hackathon')" class="category-option p-4 bg-violet-900/20 hover:bg-violet-900/30 border border-violet-800/30 rounded-lg text-center">
-                            <i class="fas fa-code text-violet-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">Hackathon</p>
-                        </button>
-                        <button type="button" onclick="setCategory('AI')" class="category-option p-4 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
-                            <i class="fas fa-brain text-emerald-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">AI</p>
-                        </button>
-                        <button type="button" onclick="setCategory('Blockchain')" class="category-option p-4 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center">
-                            <i class="fas fa-link text-amber-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">Blockchain</p>
-                        </button>
-                        <button type="button" onclick="setCategory('Cybersecurity')" class="category-option p-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
-                            <i class="fas fa-shield-alt text-blue-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">Cybersecurity</p>
-                        </button>
+                    <div class="flex items-center space-x-2 text-sm text-slate-400">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="previewLocation">Location</span>
                     </div>
-                    <input type="hidden" id="categoryInput" name="category" value="{{ form.instance.category|default:'Hackathon' }}">
-                </div>
-            </div>
-
-            <!-- Section 2: Date & Time -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-clock text-blue-400"></i>
+                    <div class="flex items-center space-x-2 text-sm text-slate-400">
+                        <i class="fas fa-users"></i>
+                        <span id="previewHost">Host</span>
                     </div>
-                    <h4 class="text-lg font-semibold">Date & Time</h4>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Start Date Field -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-slate-300">
-                            <i class="fas fa-play-circle mr-2"></i>Start Date & Time
-                        </label>
-                        {% render_field form.start_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
-                        <p class="text-xs text-slate-500">When does the event begin?</p>
-                    </div>
-
-                    <!-- End Date Field -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-slate-300">
-                            <i class="fas fa-flag-checkered mr-2"></i>End Date & Time
-                        </label>
-                        {% render_field form.end_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
-                        <p class="text-xs text-slate-500">When does the event conclude?</p>
-                    </div>
-                </div>
-
-                <!-- Duration Preview -->
-                <div class="bg-slate-800/50 rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm text-slate-400">Event Duration</span>
-                        <span id="durationValue" class="text-sm text-emerald-400">-</span>
-                    </div>
-                    <div class="relative h-2 bg-slate-700 rounded-full overflow-hidden">
-                        <div id="durationPreview" class="duration-preview h-2 rounded-full absolute left-0" style="width: 50%"></div>
-                    </div>
-                    <div class="flex justify-between text-xs text-slate-500 mt-2">
-                        <span id="startTimePreview">-</span>
-                        <span id="endTimePreview">-</span>
+                    <div class="pt-4 border-t border-slate-800">
+                        <span id="previewCategory" class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">Category</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 3: Location & Attendance -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-map-marker-alt text-violet-400"></i>
+            <!-- Schedule Check -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Schedule Check</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-400">Availability</span>
+                        <span class="text-emerald-400 font-medium">Available</span>
                     </div>
-                    <h4 class="text-lg font-semibold">Location & Attendance</h4>
-                </div>
-
-                <!-- Location Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-map mr-2"></i>Location/Venue
-                    </label>
-                    {% render_field form.location class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Enter event location, venue, or virtual meeting link..." %}
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-500">Physical address or virtual meeting details</p>
-                        <span id="locationCharCount" class="text-xs text-slate-500">0/500</span>
+                    <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-500 rounded-full" style="width: 75%"></div>
                     </div>
-                </div>
-
-                <!-- Attended Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-check-circle mr-2"></i>Attendance Status
-                    </label>
-                    <div class="flex items-center space-x-6">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            {% render_field form.attended class="w-5 h-5 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" id="attendedCheckbox" %}
-                            <span class="text-slate-300">Mark as attended</span>
-                        </label>
+                    <div class="text-sm text-slate-400">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        No conflicts detected
                     </div>
-                    <p class="text-xs text-slate-500">Check this after you've attended the event</p>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="space-y-4">
-                <h4 class="text-lg font-semibold">Quick Actions</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setStartToday()">
-                        <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
-                        <p class="font-medium">Start Today</p>
-                        <p class="text-xs text-slate-400">Set start to now</p>
-                    </button>
-
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setEndNextHour()">
-                        <i class="fas fa-hourglass-end text-violet-400 text-lg mb-2"></i>
-                        <p class="font-medium">1 Hour Duration</p>
-                        <p class="text-xs text-slate-400">Ends in 1 hour</p>
-                    </button>
-
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
-                        <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
-                        <p class="font-medium">Clear Form</p>
-                        <p class="text-xs text-slate-400">Reset all fields</p>
+                    <button onclick="runScheduleCheck()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">
+                        <i class="fas fa-search mr-2"></i>Check Schedule
                     </button>
                 </div>
             </div>
 
-            <!-- Form Actions -->
-            <div class="pt-6 border-t border-slate-800">
-                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
-                        <label for="addAnother" class="text-sm text-slate-400">Add another event after saving</label>
+            <!-- Upcoming Events -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Upcoming Events</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div>
+                            <p class="text-sm font-medium">Team Meeting</p>
+                            <p class="text-xs text-slate-400">Today • 2:00 PM</p>
+                        </div>
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
                     </div>
-
-                    <div class="flex items-center space-x-4">
-                        <a href="{% url 'event-list' %}"
-                           class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
-                            <i class="fas fa-times mr-2"></i>Cancel
-                        </a>
-                        <button type="submit"
-                                class="btn-primary px-8 py-3 flex items-center">
-                            <i class="fas fa-save mr-2"></i>
-                            {% if form.instance.pk %}Update Event{% else %}Create Event{% endif %}
-                        </button>
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div>
+                            <p class="text-sm font-medium">Client Call</p>
+                            <p class="text-xs text-slate-400">Tomorrow • 10:00 AM</p>
+                        </div>
+                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div>
+                            <p class="text-sm font-medium">Tech Conference</p>
+                            <p class="text-xs text-slate-400">Dec 20 • 9:00 AM</p>
+                        </div>
+                        <div class="w-2 h-2 bg-violet-500 rounded-full"></div>
                     </div>
                 </div>
             </div>
-        </form>
+
+            <!-- Event Tips -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4 flex items-center">
+                    <i class="fas fa-lightbulb text-amber-400 mr-2"></i>Event Planning Tips
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">1</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Set reminders 15 minutes before the event</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">2</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Include agenda items in event notes</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">3</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Check for schedule conflicts before saving</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Quick Templates</h4>
+                <div class="space-y-3">
+                    <button onclick="applyTemplate('meeting')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Team Meeting</span>
+                            <i class="fas fa-users text-emerald-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Weekly team sync-up</p>
+                    </button>
+                    <button onclick="applyTemplate('conference')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Conference</span>
+                            <i class="fas fa-users text-blue-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Tech conference attendance</p>
+                    </button>
+                    <button onclick="applyTemplate('workshop')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Workshop</span>
+                            <i class="fas fa-chalkboard-teacher text-violet-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Training session</p>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -257,78 +851,357 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const locationTextarea = document.querySelector('textarea[name="location"]');
-    const startDateInput = document.querySelector('input[name="start_date"]');
-    const endDateInput = document.querySelector('input[name="end_date"]');
-    const attendedCheckbox = document.getElementById('attendedCheckbox');
+    initializeEventForm();
+    renderMiniCalendar();
+    updateEventPreview();
+    detectUserTimeZone();
+});
 
-    // Character counter for location
+function initializeEventForm() {
+    const titleInput = document.getElementById('eventTitle');
+    const hostInput = document.getElementById('eventHost');
+    const locationTextarea = document.getElementById('eventLocation');
+    const startDateInput = document.getElementById('startDateTime');
+    const endDateInput = document.getElementById('endDateTime');
+    const attendedCheckbox = document.getElementById('attendedCheckbox');
+    const allDayCheckbox = document.getElementById('allDayEvent');
+    const titleCharCount = document.getElementById('titleCharCount');
+    const locationCharCount = document.getElementById('locationCharCount');
+
+    // Title character counter and strength
+    if (titleInput) {
+        titleInput.addEventListener('input', function() {
+            const length = this.value.length;
+            titleCharCount.textContent = length + '/100';
+
+            // Update title strength indicator
+            const strengthSpan = document.getElementById('titleStrength');
+            if (length < 5) {
+                strengthSpan.textContent = 'Weak';
+                strengthSpan.className = 'text-xs px-2 py-1 rounded-full bg-rose-900/30 text-rose-400';
+            } else if (length < 15) {
+                strengthSpan.textContent = 'Good';
+                strengthSpan.className = 'text-xs px-2 py-1 rounded-full bg-amber-900/30 text-amber-400';
+            } else if (length < 50) {
+                strengthSpan.textContent = 'Strong';
+                strengthSpan.className = 'text-xs px-2 py-1 rounded-full bg-emerald-900/30 text-emerald-400';
+            }
+
+            updateEventPreview();
+        });
+        titleInput.dispatchEvent(new Event('input'));
+    }
+
+    // Host input updates preview
+    if (hostInput) {
+        hostInput.addEventListener('input', updateEventPreview);
+    }
+
+    // Location character counter
     if (locationTextarea) {
-        const locationCharCount = document.getElementById('locationCharCount');
         locationTextarea.addEventListener('input', function() {
             const length = this.value.length;
             locationCharCount.textContent = length + '/500';
             if (length > 450) {
-                locationCharCount.classList.remove('text-slate-500');
-                locationCharCount.classList.add('text-amber-400');
+                locationCharCount.className = 'text-xs text-amber-400';
             } else if (length > 480) {
-                locationCharCount.classList.remove('text-amber-400');
-                locationCharCount.classList.add('text-rose-400');
+                locationCharCount.className = 'text-xs text-rose-400';
             } else {
-                locationCharCount.classList.remove('text-amber-400', 'text-rose-400');
-                locationCharCount.classList.add('text-slate-500');
+                locationCharCount.className = 'text-xs text-slate-500';
             }
+
+            updateEventPreview();
+            updateLocationPreview();
         });
         locationTextarea.dispatchEvent(new Event('input'));
     }
 
-    // Duration preview
-    function updateDurationPreview() {
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-
-            // Calculate duration in hours
-            const durationMs = end - start;
-            const durationHours = durationMs / (1000 * 60 * 60);
-
-            // Update duration display
-            if (durationHours < 1) {
-                const durationMinutes = durationMs / (1000 * 60);
-                document.getElementById('durationValue').textContent = Math.round(durationMinutes) + ' minutes';
-            } else {
-                document.getElementById('durationValue').textContent = durationHours.toFixed(1) + ' hours';
-            }
-
-            // Update time displays
-            document.getElementById('startTimePreview').textContent = start.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
+    // Date/time updates
+    [startDateInput, endDateInput].forEach(input => {
+        if (input) {
+            input.addEventListener('change', function() {
+                updateDurationPreview();
+                updateEventPreview();
+                checkForConflicts();
             });
-            document.getElementById('endTimePreview').textContent = end.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
-
-            // Update progress bar (simplified)
-            const totalDay = 24 * 60 * 60 * 1000; // milliseconds in a day
-            const progress = Math.min(100, (durationMs / totalDay) * 100);
-            document.getElementById('durationPreview').style.width = progress + '%';
         }
+    });
+
+    // All-day event toggle
+    if (allDayCheckbox) {
+        allDayCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Set start to beginning of day
+                const start = new Date();
+                start.setHours(0, 0, 0, 0);
+                startDateInput.value = formatDateTimeForInput(start);
+
+                // Set end to end of day
+                const end = new Date(start);
+                end.setHours(23, 59, 59, 999);
+                endDateInput.value = formatDateTimeForInput(end);
+
+                startDateInput.dispatchEvent(new Event('change'));
+            }
+        });
     }
 
-    startDateInput.addEventListener('change', updateDurationPreview);
-    endDateInput.addEventListener('change', updateDurationPreview);
-
-    // Initial update
+    // Initial updates
     updateDurationPreview();
-});
+}
 
+function renderMiniCalendar() {
+    const calendar = document.querySelector('.calendar-mini');
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const totalDays = lastDay.getDate();
+    const firstDayOfWeek = firstDay.getDay();
+
+    // Month names
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // Create calendar HTML
+    let html = '<tr><th colspan="7" class="text-sm font-medium pb-2">' + monthNames[month] + ' ' + year + '</th></tr>';
+    html += '<tr><th class="text-xs text-slate-500">S</th><th class="text-xs text-slate-500">M</th><th class="text-xs text-slate-500">T</th><th class="text-xs text-slate-500">W</th><th class="text-xs text-slate-500">T</th><th class="text-xs text-slate-500">F</th><th class="text-xs text-slate-500">S</th></tr>';
+
+    // Start calendar grid
+    html += '<tr>';
+
+    // Empty cells for days before first day of month
+    for (let i = 0; i < firstDayOfWeek; i++) {
+        html += '<td class="disabled text-slate-600">·</td>';
+    }
+
+    // Days of the month
+    let dayCounter = firstDayOfWeek;
+    for (let day = 1; day <= totalDays; day++) {
+        if (dayCounter > 6) {
+            html += '</tr><tr>';
+            dayCounter = 0;
+        }
+
+        const isToday = day === today.getDate() && month === today.getMonth();
+        const cellClass = isToday ? 'today' : '';
+        const cellContent = isToday ? `<b>${day}</b>` : day;
+
+        html += `<td class="${cellClass}" onclick="selectCalendarDay(${day}, ${month}, ${year})">${cellContent}</td>`;
+        dayCounter++;
+    }
+
+    // Fill remaining cells
+    while (dayCounter < 7) {
+        html += '<td class="disabled text-slate-600">·</td>';
+        dayCounter++;
+    }
+
+    html += '</tr>';
+    calendar.innerHTML = html;
+}
+
+function updateDurationPreview() {
+    const startDateInput = document.getElementById('startDateTime');
+    const endDateInput = document.getElementById('endDateTime');
+
+    if (startDateInput.value && endDateInput.value) {
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+
+        // Calculate duration
+        const durationMs = end - start;
+        const durationHours = durationMs / (1000 * 60 * 60);
+        const durationDays = durationMs / (1000 * 60 * 60 * 24);
+
+        // Update duration display
+        const durationValue = document.getElementById('durationValue');
+        if (durationDays >= 1) {
+            durationValue.textContent = durationDays.toFixed(1) + ' days';
+        } else if (durationHours < 1) {
+            const durationMinutes = durationMs / (1000 * 60);
+            durationValue.textContent = Math.round(durationMinutes) + ' min';
+        } else {
+            durationValue.textContent = durationHours.toFixed(1) + ' hrs';
+        }
+
+        // Update time displays
+        document.getElementById('startTimePreview').textContent = start.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        document.getElementById('endTimePreview').textContent = end.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        // Update progress bar
+        const totalDay = 24 * 60 * 60 * 1000; // milliseconds in a day
+        const progress = Math.min(100, (durationMs / totalDay) * 100 * 4); // Scale for visibility
+        document.getElementById('durationPreview').style.width = progress + '%';
+    }
+}
+
+function updateEventPreview() {
+    const title = document.getElementById('eventTitle').value || 'Event Title';
+    const host = document.getElementById('eventHost').value || 'Host';
+    const location = document.getElementById('eventLocation').value || 'Location';
+    const category = document.getElementById('categoryInput').value || 'Hackathon';
+    const startDateInput = document.getElementById('startDateTime');
+
+    document.getElementById('previewTitle').textContent = title;
+    document.getElementById('previewHost').textContent = host;
+    document.getElementById('previewLocation').textContent = location;
+    document.getElementById('previewCategory').textContent = category;
+
+    // Format category preview
+    const categoryColors = {
+        'Hackathon': 'violet',
+        'AI': 'emerald',
+        'Blockchain': 'amber',
+        'Cybersecurity': 'blue',
+        'Networking': 'cyan',
+        'Other': 'slate'
+    };
+
+    const color = categoryColors[category] || 'emerald';
+    const previewCategory = document.getElementById('previewCategory');
+    previewCategory.className = `px-3 py-1 bg-${color}-900/30 text-${color}-400 rounded-full text-sm`;
+
+    // Update date/time preview
+    if (startDateInput.value) {
+        const date = new Date(startDateInput.value);
+        const formattedDate = date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        const formattedTime = date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        document.getElementById('previewDateTime').textContent = `${formattedDate} • ${formattedTime}`;
+    }
+}
+
+function updateLocationPreview() {
+    const location = document.getElementById('eventLocation').value;
+    const mapPreview = document.getElementById('mapPreview');
+    const weatherInfo = document.getElementById('weatherInfo');
+
+    // Show/hide map preview based on location type
+    if (location.includes('http') || location.includes('zoom') || location.includes('meet')) {
+        mapPreview.classList.add('hidden');
+        weatherInfo.classList.add('hidden');
+    } else if (location.trim().length > 10) {
+        mapPreview.classList.remove('hidden');
+        weatherInfo.classList.remove('hidden');
+        // Simulate weather data
+        simulateWeatherData();
+    } else {
+        mapPreview.classList.add('hidden');
+        weatherInfo.classList.add('hidden');
+    }
+}
+
+function simulateWeatherData() {
+    const weatherConditions = ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Stormy'];
+    const randomCondition = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+    const randomTemp = Math.floor(Math.random() * 15) + 15; // 15-30°C
+    const randomRain = Math.floor(Math.random() * 30); // 0-30%
+    const randomWind = Math.floor(Math.random() * 20) + 5; // 5-25 km/h
+
+    // Get event date for weather
+    const startDateInput = document.getElementById('startDateTime');
+    let weatherDate = 'Today';
+    if (startDateInput.value) {
+        const eventDate = new Date(startDateInput.value);
+        const today = new Date();
+        const diffTime = eventDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) weatherDate = 'Today';
+        else if (diffDays === 1) weatherDate = 'Tomorrow';
+        else weatherDate = eventDate.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+
+    document.getElementById('weatherDate').textContent = weatherDate;
+    document.getElementById('weatherTemp').textContent = randomTemp + '°C';
+    document.getElementById('weatherCondition').textContent = randomCondition;
+    document.getElementById('rainChance').textContent = randomRain + '%';
+    document.getElementById('windSpeed').textContent = randomWind + ' km/h';
+
+    // Update weather icon
+    const weatherIcon = document.querySelector('.weather-icon i');
+    switch(randomCondition) {
+        case 'Sunny':
+            weatherIcon.className = 'fas fa-sun';
+            break;
+        case 'Partly Cloudy':
+            weatherIcon.className = 'fas fa-cloud-sun';
+            break;
+        case 'Cloudy':
+            weatherIcon.className = 'fas fa-cloud';
+            break;
+        case 'Rainy':
+            weatherIcon.className = 'fas fa-cloud-rain';
+            break;
+        case 'Stormy':
+            weatherIcon.className = 'fas fa-bolt';
+            break;
+    }
+}
+
+function detectUserTimeZone() {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    document.getElementById('currentTimeZone').textContent = timeZone;
+    document.getElementById('currentLocalTime').textContent = timeString;
+}
+
+function checkForConflicts() {
+    // Simulate conflict checking
+    const startDateInput = document.getElementById('startDateTime');
+    const endDateInput = document.getElementById('endDateTime');
+
+    if (startDateInput.value && endDateInput.value) {
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+
+        // Simulate 20% chance of conflict
+        if (Math.random() < 0.2) {
+            const conflictAlert = document.getElementById('conflictAlert');
+            const conflictDetails = document.getElementById('conflictDetails');
+
+            const conflictEvents = ['Team Meeting', 'Client Call', 'Lunch Break', 'Daily Standup'];
+            const randomEvent = conflictEvents[Math.floor(Math.random() * conflictEvents.length)];
+
+            conflictDetails.textContent = `Overlaps with "${randomEvent}" at ${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+            conflictAlert.classList.remove('hidden');
+            conflictAlert.classList.add('conflict-indicator');
+        }
+    }
+}
+
+function dismissConflict() {
+    const conflictAlert = document.getElementById('conflictAlert');
+    conflictAlert.classList.add('hidden');
+    conflictAlert.classList.remove('conflict-indicator');
+}
+
+// Category functions
 function setCategory(category) {
     document.getElementById('categoryInput').value = category;
 
@@ -337,29 +1210,339 @@ function setCategory(category) {
         opt.classList.remove('ring-2', 'ring-emerald-500');
     });
     event.currentTarget.classList.add('ring-2', 'ring-emerald-500');
+
+    updateEventPreview();
+}
+
+function showAllCategories() {
+    alert('Available categories: Hackathon, AI, Blockchain, Cybersecurity, Networking, Workshop, Conference, Meeting, Other');
+}
+
+// Location functions
+function setLocationType(type) {
+    document.getElementById('locationType').value = type;
+
+    // Visual feedback
+    document.querySelectorAll('.location-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+
+    // Update placeholder based on type
+    const locationInput = document.getElementById('eventLocation');
+    switch(type) {
+        case 'physical':
+            locationInput.placeholder = 'Enter physical address or venue...';
+            break;
+        case 'virtual':
+            locationInput.placeholder = 'Enter meeting link (Zoom, Google Meet, etc.)...';
+            break;
+        case 'hybrid':
+            locationInput.placeholder = 'Enter both physical and virtual details...';
+            break;
+    }
+}
+
+function detectLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            // Simulate reverse geocoding
+            const locations = [
+                "123 Tech Street, San Francisco, CA",
+                "456 Innovation Ave, New York, NY",
+                "789 Startup Blvd, Austin, TX"
+            ];
+            const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+
+            document.getElementById('eventLocation').value = randomLocation;
+            document.getElementById('eventLocation').dispatchEvent(new Event('input'));
+
+            alert('Location detected and filled automatically!');
+        });
+    } else {
+        alert('Geolocation is not supported by your browser.');
+    }
+}
+
+function insertMeetingLink() {
+    const zoomLinks = [
+        "https://zoom.us/j/1234567890",
+        "https://zoom.us/j/0987654321",
+        "https://zoom.us/j/5556667777"
+    ];
+    const randomLink = zoomLinks[Math.floor(Math.random() * zoomLinks)];
+    insertTextAtCursor(randomLink);
+}
+
+function insertGoogleMeet() {
+    const meetLinks = [
+        "https://meet.google.com/abc-defg-hij",
+        "https://meet.google.com/xyz-wvu-tsr",
+        "https://meet.google.com/qpo-nml-kji"
+    ];
+    const randomLink = meetLinks[Math.floor(Math.random() * meetLinks.length)];
+    insertTextAtCursor(randomLink);
+}
+
+function insertTextAtCursor(text) {
+    const locationInput = document.getElementById('eventLocation');
+    const start = locationInput.selectionStart;
+    const end = locationInput.selectionEnd;
+
+    locationInput.value = locationInput.value.substring(0, start) +
+                         text +
+                         locationInput.value.substring(end);
+
+    locationInput.selectionStart = start + text.length;
+    locationInput.selectionEnd = start + text.length;
+    locationInput.focus();
+    locationInput.dispatchEvent(new Event('input'));
+}
+
+// Date/time functions
+function selectCalendarDay(day, month, year) {
+    const date = new Date(year, month, day, 9, 0); // 9:00 AM
+    document.getElementById('startDateTime').value = formatDateTimeForInput(date);
+
+    const endDate = new Date(date);
+    endDate.setHours(date.getHours() + 2); // 2 hour duration
+    document.getElementById('endDateTime').value = formatDateTimeForInput(endDate);
+
+    document.getElementById('startDateTime').dispatchEvent(new Event('change'));
+}
+
+function selectToday() {
+    const now = new Date();
+    now.setHours(9, 0, 0, 0); // 9:00 AM
+    setStartDateTime(now);
+}
+
+function selectTomorrow() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    setStartDateTime(tomorrow);
+}
+
+function selectNextWeek() {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    nextWeek.setHours(9, 0, 0, 0);
+    setStartDateTime(nextWeek);
+}
+
+function setStartDateTime(date) {
+    document.getElementById('startDateTime').value = formatDateTimeForInput(date);
+
+    const endDate = new Date(date);
+    endDate.setHours(date.getHours() + 2); // 2 hour duration
+    document.getElementById('endDateTime').value = formatDateTimeForInput(endDate);
+
+    document.getElementById('startDateTime').dispatchEvent(new Event('change'));
+}
+
+function setTimeSlot(startTime, endTime) {
+    const startDateInput = document.getElementById('startDateTime');
+    const endDateInput = document.getElementById('endDateTime');
+
+    if (startDateInput.value) {
+        const date = new Date(startDateInput.value);
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const [endHour, endMinute] = endTime.split(':').map(Number);
+
+        date.setHours(startHour, startMinute, 0, 0);
+        startDateInput.value = formatDateTimeForInput(date);
+
+        const endDate = new Date(date);
+        endDate.setHours(endHour, endMinute, 0, 0);
+        endDateInput.value = formatDateTimeForInput(endDate);
+
+        startDateInput.dispatchEvent(new Event('change'));
+    }
+}
+
+function setAllDay() {
+    document.getElementById('allDayEvent').checked = true;
+    document.getElementById('allDayEvent').dispatchEvent(new Event('change'));
+}
+
+// Helper functions
+function formatDateTimeForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Smart features
+function generateSmartTitle() {
+    const titles = [
+        "Tech Conference 2024 - Future of AI",
+        "Blockchain Development Workshop",
+        "Cybersecurity Awareness Training",
+        "Networking Mixer for Developers",
+        "Hackathon Preparation Session"
+    ];
+    const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+    document.getElementById('eventTitle').value = randomTitle;
+    document.getElementById('eventTitle').dispatchEvent(new Event('input'));
+}
+
+function applySuggestion(type) {
+    if (type === 'conference') {
+        document.getElementById('eventTitle').value = 'Tech Conference 2024 - Future of AI';
+        setCategory('AI');
+        document.getElementById('eventHost').value = 'Tech Events Inc.';
+    } else if (type === 'workshop') {
+        document.getElementById('eventTitle').value = 'Blockchain Development Workshop';
+        setCategory('Blockchain');
+        document.getElementById('eventHost').value = 'Crypto Academy';
+    }
+    document.getElementById('eventTitle').dispatchEvent(new Event('input'));
+}
+
+function applyTemplate(template) {
+    if (template === 'meeting') {
+        document.getElementById('eventTitle').value = 'Weekly Team Meeting';
+        setCategory('Networking');
+        document.getElementById('eventHost').value = 'Team Lead';
+        document.getElementById('eventLocation').value = 'Conference Room A / https://zoom.us/j/1234567890';
+        setLocationType('hybrid');
+    } else if (template === 'conference') {
+        document.getElementById('eventTitle').value = 'Annual Tech Conference';
+        setCategory('AI');
+        document.getElementById('eventHost').value = 'Tech Conference Inc.';
+        document.getElementById('eventLocation').value = 'Convention Center, 123 Main St';
+        setLocationType('physical');
+    } else if (template === 'workshop') {
+        document.getElementById('eventTitle').value = 'Python Programming Workshop';
+        setCategory('Hackathon');
+        document.getElementById('eventHost').value = 'Coding Academy';
+        document.getElementById('eventLocation').value = 'https://meet.google.com/abc-defg-hij';
+        setLocationType('virtual');
+    }
+
+    // Set dates
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    setStartDateTime(tomorrow);
+
+    document.getElementById('eventLocation').dispatchEvent(new Event('input'));
+}
+
+function addAgendaItem() {
+    const agendaItems = [
+        "1. Introductions and icebreaker",
+        "2. Review of previous meeting minutes",
+        "3. Current project updates",
+        "4. Discussion of blockers and challenges",
+        "5. Planning for next steps",
+        "6. Q&A session",
+        "7. Action items and next meeting date"
+    ];
+
+    const notesTextarea = document.querySelector('textarea[placeholder*="agenda"]');
+    if (notesTextarea) {
+        const currentValue = notesTextarea.value;
+        const randomItem = agendaItems[Math.floor(Math.random() * agendaItems.length)];
+        notesTextarea.value = currentValue + (currentValue ? '\n\n' : '') + randomItem;
+    }
+}
+
+function setEventColor(color) {
+    document.getElementById('eventColor').value = color;
+
+    // Visual feedback
+    document.querySelectorAll('.quick-action-btn').forEach(btn => {
+        btn.style.borderColor = color;
+    });
+
+    event.currentTarget.style.borderColor = 'white';
+    event.currentTarget.style.transform = 'scale(1.1)';
+}
+
+function runScheduleCheck() {
+    // Simulate schedule check
+    const results = [
+        { status: 'Available', color: 'emerald', width: '100%' },
+        { status: 'Minor Conflict', color: 'amber', width: '60%' },
+        { status: 'Major Conflict', color: 'rose', width: '30%' }
+    ];
+    const randomResult = results[Math.floor(Math.random() * results.length)];
+
+    const statusElement = document.querySelector('.card:nth-child(2) .font-medium');
+    const barElement = document.querySelector('.card:nth-child(2) .h-2 > div');
+    const infoElement = document.querySelector('.card:nth-child(2) .text-sm');
+
+    statusElement.textContent = randomResult.status;
+    statusElement.className = `font-medium text-${randomResult.color}-400`;
+    barElement.className = `h-full bg-${randomResult.color}-500 rounded-full`;
+    barElement.style.width = randomResult.width;
+
+    if (randomResult.status === 'Available') {
+        infoElement.textContent = 'No conflicts detected';
+    } else {
+        infoElement.textContent = 'Check event details for conflicts';
+    }
+}
+
+function checkAvailability() {
+    // Simulate availability check
+    const availability = Math.random() > 0.3 ? 'Available' : 'Conflicts Found';
+    const message = availability === 'Available'
+        ? 'This time slot looks good!'
+        : 'Potential conflicts detected. Consider adjusting the time.';
+
+    alert(`${availability}\n\n${message}`);
+}
+
+function openInMaps() {
+    const location = document.getElementById('eventLocation').value;
+    if (location) {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+        window.open(mapsUrl, '_blank');
+    }
 }
 
 function setStartToday() {
     const now = new Date();
-    const today = now.toISOString().slice(0, 16);
-    const startDateInput = document.querySelector('input[name="start_date"]');
-    startDateInput.value = today;
-    startDateInput.dispatchEvent(new Event('change'));
+    now.setMinutes(now.getMinutes() + 5); // Start in 5 minutes
+    document.getElementById('startDateTime').value = formatDateTimeForInput(now);
+
+    const endDate = new Date(now);
+    endDate.setHours(now.getHours() + 1); // 1 hour duration
+    document.getElementById('endDateTime').value = formatDateTimeForInput(endDate);
+
+    document.getElementById('startDateTime').dispatchEvent(new Event('change'));
 }
 
 function setEndNextHour() {
     const now = new Date();
-    const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
-    const nextHourStr = nextHour.toISOString().slice(0, 16);
-    const endDateInput = document.querySelector('input[name="end_date"]');
-    endDateInput.value = nextHourStr;
-    endDateInput.dispatchEvent(new Event('change'));
+    now.setMinutes(now.getMinutes() + 5); // Start in 5 minutes
+
+    const endDate = new Date(now);
+    endDate.setHours(now.getHours() + 1); // 1 hour duration
+
+    document.getElementById('startDateTime').value = formatDateTimeForInput(now);
+    document.getElementById('endDateTime').value = formatDateTimeForInput(endDate);
+
+    document.getElementById('startDateTime').dispatchEvent(new Event('change'));
 }
 
 function clearForm() {
     if (confirm('Are you sure you want to clear all form fields?')) {
         document.getElementById('eventForm').reset();
         document.getElementById('categoryInput').value = 'Hackathon';
+        document.getElementById('locationType').value = 'physical';
+        document.getElementById('eventColor').value = '#10b981';
+        document.getElementById('titleCharCount').textContent = '0/100';
         document.getElementById('locationCharCount').textContent = '0/500';
         document.getElementById('durationValue').textContent = '-';
         document.getElementById('durationPreview').style.width = '0%';
@@ -370,19 +1553,39 @@ function clearForm() {
         document.querySelectorAll('.category-option').forEach(opt => {
             opt.classList.remove('ring-2', 'ring-emerald-500');
         });
+
+        // Reset location type buttons
+        document.querySelectorAll('.location-type-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Hide previews
+        document.getElementById('mapPreview').classList.add('hidden');
+        document.getElementById('weatherInfo').classList.add('hidden');
+        document.getElementById('conflictAlert').classList.add('hidden');
+
+        updateEventPreview();
     }
 }
 
 // Form validation
 document.getElementById('eventForm').addEventListener('submit', function(e) {
-    const titleInput = document.querySelector('input[name="title"]');
-    const startDateInput = document.querySelector('input[name="start_date"]');
-    const endDateInput = document.querySelector('input[name="end_date"]');
+    const titleInput = document.getElementById('eventTitle');
+    const hostInput = document.getElementById('eventHost');
+    const startDateInput = document.getElementById('startDateTime');
+    const endDateInput = document.getElementById('endDateTime');
 
     if (!titleInput.value.trim()) {
         e.preventDefault();
         alert('Please enter an event title.');
         titleInput.focus();
+        return false;
+    }
+
+    if (!hostInput.value.trim()) {
+        e.preventDefault();
+        alert('Please enter a host/organizer.');
+        hostInput.focus();
         return false;
     }
 

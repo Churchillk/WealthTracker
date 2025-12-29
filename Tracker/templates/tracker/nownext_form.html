@@ -15,189 +15,781 @@
         border-color: rgba(16, 185, 129, 0.5);
         background: rgba(16, 185, 129, 0.1);
     }
+
+    .time-estimate-badge {
+        transition: all 0.2s ease;
+    }
+
+    .time-estimate-badge:hover {
+        transform: scale(1.05);
+    }
+
+    .smart-suggestion {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .smart-suggestion:hover {
+        background: rgba(139, 92, 246, 0.2);
+    }
+
+    .category-tag {
+        transition: all 0.2s ease;
+    }
+
+    .category-tag:hover {
+        transform: translateY(-1px);
+    }
+
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+
+    .progress-ring__circle {
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.35s;
+    }
+
+    .mood-emoji {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .mood-emoji:hover {
+        transform: scale(1.2);
+    }
+
+    .mood-emoji.active {
+        transform: scale(1.3);
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="card rounded-xl p-8">
-        <div class="flex items-center justify-between mb-8">
-            <div>
-                <h3 class="text-xl font-bold">
-                    <i class="fas fa-tasks text-emerald-400 mr-2"></i>
-                    {% if form.instance.pk %}Edit Task{% else %}Create New Task{% endif %}
-                </h3>
-                <p class="text-slate-400 text-sm mt-1">
-                    {% if form.instance.pk %}
-                    Last updated: {{ form.instance.date|date:"M d, Y" }}
-                    {% else %}
-                    Plan what needs to be done now and what comes next
+<div class="max-w-6xl mx-auto">
+    <!-- Breadcrumb Navigation -->
+    <div class="mb-6">
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'dashboard' %}" class="inline-flex items-center text-sm text-slate-400 hover:text-white">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-slate-600 mx-2"></i>
+                        <a href="{% url 'nownext-list' %}" class="ml-1 text-sm text-slate-400 hover:text-white">Now & Next</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-slate-600 mx-2"></i>
+                        <span class="ml-1 text-sm text-emerald-400 font-medium">
+                            {% if form.instance.pk %}Edit Task{% else %}New Task{% endif %}
+                        </span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Form Column -->
+        <div class="lg:col-span-2">
+            <div class="card rounded-xl p-8">
+                <!-- Form Header -->
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-tasks text-emerald-400 mr-2"></i>
+                            {% if form.instance.pk %}Edit Task{% else %}Create New Task{% endif %}
+                        </h3>
+                        <p class="text-slate-400 text-sm mt-1">
+                            {% if form.instance.pk %}
+                            Last updated: {{ form.instance.date|date:"M d, Y • h:i A" }} |
+                            Created: {{ form.instance.date|date:"M d, Y" }}
+                            {% else %}
+                            Plan what needs to be done now and what comes next
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="px-3 py-1 {% if form.instance.done %}bg-emerald-900/30 text-emerald-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
+                            <i class="fas {% if form.instance.done %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
+                            {% if form.instance.done %}Completed{% else %}Active{% endif %}
+                        </span>
+                        {% if form.instance.pk %}
+                        <div class="relative group">
+                            <button class="w-10 h-10 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center">
+                                <i class="fas fa-ellipsis-v text-slate-400"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm"><i class="fas fa-copy mr-2"></i>Duplicate Task</a>
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm"><i class="fas fa-share-alt mr-2"></i>Share Task</a>
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm text-rose-400"><i class="fas fa-archive mr-2"></i>Archive</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Task Progress & Stats -->
+                <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-800/50 rounded-lg p-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-emerald-400">{{ completed_tasks|default:"0" }}/{{ total_tasks|default:"0" }}</div>
+                            <div class="text-xs text-slate-400 mt-1">Tasks Completed</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-amber-400">{{ today_tasks|default:"0" }}</div>
+                            <div class="text-xs text-slate-400 mt-1">Today's Tasks</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-violet-400">{{ completion_rate|default:"0" }}%</div>
+                            <div class="text-xs text-slate-400 mt-1">Completion Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Container -->
+                <form method="post" class="space-y-8" id="taskForm">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                            <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                        </div>
+                        <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                     {% endif %}
-                </p>
-            </div>
-            <div>
-                <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
-                    <i class="fas {% if form.instance.done %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
-                    {% if form.instance.done %}Completed{% else %}Active{% endif %}
-                </span>
+
+                    <!-- Section 1: Task Core Information -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-info-circle text-emerald-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Task Information</h4>
+                            </div>
+                            <button type="button" onclick="generateSmartTask()" class="text-sm text-violet-400 hover:text-violet-300 flex items-center">
+                                <i class="fas fa-magic mr-2"></i>AI Suggestion
+                            </button>
+                        </div>
+
+                        <!-- Date & Time -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Date & Time
+                                </label>
+                                <div class="relative">
+                                    {% render_field form.date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" id="taskDate" %}
+                                    <i class="fas fa-calendar text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                                </div>
+                                <p class="text-xs text-slate-500">When is this task scheduled for?</p>
+                            </div>
+
+                            <!-- Time Estimate -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-hourglass-half mr-2"></i>Time Estimate
+                                </label>
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="setTimeEstimate(15)" class="time-estimate-badge px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-full text-sm">
+                                        15 min
+                                    </button>
+                                    <button type="button" onclick="setTimeEstimate(30)" class="time-estimate-badge px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-full text-sm">
+                                        30 min
+                                    </button>
+                                    <button type="button" onclick="setTimeEstimate(60)" class="time-estimate-badge px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-full text-sm">
+                                        1 hour
+                                    </button>
+                                    <button type="button" onclick="setTimeEstimate(120)" class="time-estimate-badge px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-full text-sm">
+                                        2 hours
+                                    </button>
+                                </div>
+                                <input type="hidden" id="timeEstimate" value="30">
+                            </div>
+                        </div>
+
+                        <!-- Task Description -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-list-check mr-2"></i>What needs to be done?
+                                </label>
+                                <span id="doStrength" class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-400">Weak</span>
+                            </div>
+                            {% render_field form.do class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Describe what needs to be accomplished..." id="taskDo" %}
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="formatText('bold', 'taskDo')" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded flex items-center justify-center">
+                                        <i class="fas fa-bold text-sm"></i>
+                                    </button>
+                                    <button type="button" onclick="formatText('italic', 'taskDo')" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded flex items-center justify-center">
+                                        <i class="fas fa-italic text-sm"></i>
+                                    </button>
+                                    <button type="button" onclick="formatText('list', 'taskDo')" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded flex items-center justify-center">
+                                        <i class="fas fa-list text-sm"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span id="doCharCount" class="text-xs text-slate-500">0/1000</span>
+                                    <button type="button" onclick="generateSmartDo()" class="text-xs text-violet-400 hover:text-violet-300">
+                                        <i class="fas fa-wand-magic-sparkles mr-1"></i>AI Expand
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Task Categories -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-tags mr-2"></i>Task Categories
+                            </label>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="toggleCategory('work')" class="category-tag px-3 py-1 bg-blue-900/30 text-blue-400 rounded-full text-sm">
+                                    <i class="fas fa-briefcase mr-1"></i>Work
+                                </button>
+                                <button type="button" onclick="toggleCategory('personal')" class="category-tag px-3 py-1 bg-purple-900/30 text-purple-400 rounded-full text-sm">
+                                    <i class="fas fa-user mr-1"></i>Personal
+                                </button>
+                                <button type="button" onclick="toggleCategory('health')" class="category-tag px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                                    <i class="fas fa-heart mr-1"></i>Health
+                                </button>
+                                <button type="button" onclick="toggleCategory('learning')" class="category-tag px-3 py-1 bg-amber-900/30 text-amber-400 rounded-full text-sm">
+                                    <i class="fas fa-graduation-cap mr-1"></i>Learning
+                                </button>
+                                <button type="button" onclick="toggleCategory('finance')" class="category-tag px-3 py-1 bg-cyan-900/30 text-cyan-400 rounded-full text-sm">
+                                    <i class="fas fa-money-bill-wave mr-1"></i>Finance
+                                </button>
+                                <button type="button" onclick="addCustomCategory()" class="category-tag px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-full text-sm">
+                                    <i class="fas fa-plus mr-1"></i>Add
+                                </button>
+                            </div>
+                            <input type="hidden" id="taskCategories" name="categories" value="">
+                        </div>
+
+                        <!-- Smart Suggestions -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <button type="button" onclick="applySuggestion('urgent')" class="smart-suggestion p-3 rounded-lg text-left">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-rose-400 font-medium">Urgent</span>
+                                    <i class="fas fa-fire text-rose-400"></i>
+                                </div>
+                                <p class="text-sm text-slate-300">"Fix critical bug in production - High priority"</p>
+                            </button>
+                            <button type="button" onclick="applySuggestion('planning')" class="smart-suggestion p-3 rounded-lg text-left">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-blue-400 font-medium">Planning</span>
+                                    <i class="fas fa-project-diagram text-blue-400"></i>
+                                </div>
+                                <p class="text-sm text-slate-300">"Plan Q2 strategy and set goals"</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Challenges & Considerations -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-amber-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-amber-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Challenges & Considerations</h4>
+                            </div>
+                            <button type="button" onclick="analyzeChallenges()" class="text-sm text-amber-400 hover:text-amber-300 flex items-center">
+                                <i class="fas fa-brain mr-2"></i>Analyze Risks
+                            </button>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-road mr-2"></i>What challenges might you face?
+                            </label>
+                            {% render_field form.challenges class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="List any potential obstacles, risks, or considerations..." id="taskChallenges" %}
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="addChallengeItem()" class="text-xs text-amber-400 hover:text-amber-300">
+                                        <i class="fas fa-plus mr-1"></i>Add Item
+                                    </button>
+                                    <button type="button" onclick="clearChallenges()" class="text-xs text-slate-400 hover:text-slate-300">
+                                        <i class="fas fa-eraser mr-1"></i>Clear
+                                    </button>
+                                </div>
+                                <span id="challengesCharCount" class="text-xs text-slate-500">0/1000</span>
+                            </div>
+                        </div>
+
+                        <!-- Risk Assessment -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-slate-300">Risk Assessment</span>
+                                <span id="riskLevel" class="text-sm font-medium text-emerald-400">Low</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-slate-400">Complexity</span>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-circle text-emerald-400 text-xs mr-1"></i>
+                                        <i class="far fa-circle text-slate-600 text-xs mr-1"></i>
+                                        <i class="far fa-circle text-slate-600 text-xs"></i>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-slate-400">Dependencies</span>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-circle text-emerald-400 text-xs mr-1"></i>
+                                        <i class="fas fa-circle text-emerald-400 text-xs mr-1"></i>
+                                        <i class="far fa-circle text-slate-600 text-xs"></i>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-slate-400">Time Pressure</span>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-circle text-emerald-400 text-xs mr-1"></i>
+                                        <i class="far fa-circle text-slate-600 text-xs mr-1"></i>
+                                        <i class="far fa-circle text-slate-600 text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Gratitude & Value -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-heart text-violet-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Gratitude & Value</h4>
+                            </div>
+                            <button type="button" onclick="calculateValue()" class="text-sm text-violet-400 hover:text-violet-300 flex items-center">
+                                <i class="fas fa-calculator mr-2"></i>Calculate Value
+                            </button>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-sparkles mr-2"></i>What value will this bring?
+                            </label>
+                            {% render_field form.gratitude class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Describe the benefits, value, or what you&#39;re grateful for..." id="taskGratitude" %}
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="addGratitudeItem()" class="text-xs text-violet-400 hover:text-violet-300">
+                                        <i class="fas fa-plus mr-1"></i>Add Benefit
+                                    </button>
+                                    <button type="button" onclick="generateGratitude()" class="text-xs text-violet-400 hover:text-violet-300">
+                                        <i class="fas fa-wand-magic-sparkles mr-1"></i>AI Generate
+                                    </button>
+                                </div>
+                                <span id="gratitudeCharCount" class="text-xs text-slate-500">0/1000</span>
+                            </div>
+                        </div>
+
+                        <!-- Value Metrics -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-emerald-400" id="impactScore">8.5</div>
+                                    <div class="text-xs text-slate-400 mt-1">Impact Score</div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-blue-400" id="satisfactionScore">9.2</div>
+                                    <div class="text-xs text-slate-400 mt-1">Satisfaction</div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-violet-400" id="valueROI">High</div>
+                                    <div class="text-xs text-slate-400 mt-1">Value ROI</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mood/Feeling -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-smile mr-2"></i>How does this task make you feel?
+                            </label>
+                            <div class="flex justify-center space-x-4">
+                                <span onclick="setMood('😢')" class="mood-emoji text-3xl">😢</span>
+                                <span onclick="setMood('😐')" class="mood-emoji text-3xl">😐</span>
+                                <span onclick="setMood('🙂')" class="mood-emoji text-3xl active">🙂</span>
+                                <span onclick="setMood('😊')" class="mood-emoji text-3xl">😊</span>
+                                <span onclick="setMood('😄')" class="mood-emoji text-3xl">😄</span>
+                            </div>
+                            <input type="hidden" id="taskMood" value="🙂">
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Task Management -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-cyan-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-cog text-cyan-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Task Management</h4>
+                        </div>
+
+                        <!-- Status & Priority -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Status Field -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-check-circle mr-2"></i>Task Status
+                                </label>
+                                <div class="bg-slate-800/50 rounded-lg p-4">
+                                    <div class="flex items-center space-x-4">
+                                        <label class="flex items-center space-x-3 cursor-pointer">
+                                            <div class="relative">
+                                                {% render_field form.done class="sr-only peer" id="taskDone" %}
+                                                <div class="w-12 h-6 bg-slate-700 peer-checked:bg-emerald-500 rounded-full peer"></div>
+                                                <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition peer-checked:transform peer-checked:translate-x-6"></div>
+                                            </div>
+                                            <span class="text-slate-300">Mark as completed</span>
+                                        </label>
+                                        <div class="flex-1">
+                                            <div class="h-1 bg-slate-700 rounded-full overflow-hidden">
+                                                <div class="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full" id="completionBar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-3">Check when task is complete. You can also track progress above.</p>
+                                </div>
+                            </div>
+
+                            <!-- Priority Field -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-flag mr-2"></i>Priority Level
+                                </label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button type="button" onclick="setPriority('Low')" class="priority-option p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                        <div class="flex items-center justify-center space-x-2">
+                                            <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                                            <span>Low</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="setPriority('Medium')" class="priority-option p-3 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center">
+                                        <div class="flex items-center justify-center space-x-2">
+                                            <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
+                                            <span>Medium</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="setPriority('High')" class="priority-option p-3 bg-rose-900/20 hover:bg-rose-900/30 border border-rose-800/30 rounded-lg text-center">
+                                        <div class="flex items-center justify-center space-x-2">
+                                            <span class="w-2 h-2 bg-rose-500 rounded-full"></span>
+                                            <span>High</span>
+                                        </div>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="taskPriority" value="Medium">
+                            </div>
+                        </div>
+
+                        <!-- Progress Tracking -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-chart-line mr-2"></i>Progress Tracking
+                                </label>
+                                <span id="progressValue" class="text-sm text-emerald-400">0%</span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="relative w-16 h-16">
+                                    <svg class="w-16 h-16 progress-ring" viewBox="0 0 100 100">
+                                        <circle class="progress-ring__track" cx="50" cy="50" r="45" fill="transparent" stroke="rgba(30, 41, 59, 0.5)" stroke-width="8"/>
+                                        <circle class="progress-ring__circle" cx="50" cy="50" r="45" fill="transparent" stroke="#10b981" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span id="circularProgress" class="text-lg font-bold text-emerald-400">0%</span>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="range" min="0" max="100" value="0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" id="progressSlider">
+                                    <div class="flex justify-between text-xs text-slate-500 mt-2">
+                                        <span>Not Started</span>
+                                        <span>In Progress</span>
+                                        <span>Completed</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Related Items -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-project-diagram mr-2"></i>Related Project
+                                </label>
+                                <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                    <option value="">Link to a project...</option>
+                                    <option value="1">Wealth Tracker App</option>
+                                    <option value="2">Portfolio Website</option>
+                                    <option value="3">Investment Research</option>
+                                </select>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Linked Event
+                                </label>
+                                <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                    <option value="">Link to an event...</option>
+                                    <option value="1">Team Meeting</option>
+                                    <option value="2">Client Call</option>
+                                    <option value="3">Workshop</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Notes & Attachments -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-sticky-note mr-2"></i>Additional Notes
+                            </label>
+                            <textarea class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Add any additional notes, reminders, or context..."></textarea>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-paperclip mr-2"></i>Attachments
+                            </label>
+                            <div class="border-2 border-dashed border-slate-700 rounded-lg p-4 text-center">
+                                <i class="fas fa-cloud-upload-alt text-xl text-slate-600 mb-2"></i>
+                                <p class="text-sm text-slate-400 mb-1">Drop files here or click to upload</p>
+                                <p class="text-xs text-slate-500">Supports images, documents, links</p>
+                                <input type="file" multiple class="hidden" id="fileUpload">
+                                <button type="button" onclick="document.getElementById('fileUpload').click()" class="mt-3 px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-sm">
+                                    <i class="fas fa-upload mr-1"></i>Browse Files
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="space-y-6">
+                        <h4 class="text-lg font-semibold">Quick Actions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <button type="button" onclick="setTodayDate()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">Today's Date</p>
+                                <p class="text-xs text-slate-400">Set to now</p>
+                            </button>
+
+                            <button type="button" onclick="markCompleted()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-check-circle text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">Mark Complete</p>
+                                <p class="text-xs text-slate-400">Set as done</p>
+                            </button>
+
+                            <button type="button" onclick="applyTaskTemplate()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-clipboard text-cyan-400 text-lg mb-2"></i>
+                                <p class="font-medium">Apply Template</p>
+                                <p class="text-xs text-slate-400">Use template</p>
+                            </button>
+
+                            <button type="button" onclick="clearForm()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
+                                <p class="font-medium">Clear Form</p>
+                                <p class="text-xs text-slate-400">Reset all fields</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="pt-6 border-t border-slate-800">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm text-slate-400">Add another task after saving</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="setReminder" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" checked>
+                                    <span class="text-sm text-slate-400">Set reminder</span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <a href="{% url 'nownext-list' %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                <button type="submit"
+                                        class="btn-primary px-8 py-3 flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <form method="post" class="space-y-8" id="taskForm">
-            {% csrf_token %}
-
-            <!-- Form Errors -->
-            {% if form.errors %}
-            <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
-                <div class="flex items-center mb-3">
-                    <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
-                    <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
-                </div>
-                <ul class="mt-2 text-sm text-rose-400 space-y-1">
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                            <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <!-- Section 1: Task Details -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-info-circle text-emerald-400"></i>
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Task Preview -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Task Preview</h4>
+                <div class="space-y-4">
+                    <div id="previewTask" class="text-lg font-bold text-emerald-400 truncate">Task Description</div>
+                    <div class="flex items-center space-x-2 text-sm text-slate-400">
+                        <i class="fas fa-calendar"></i>
+                        <span id="previewDate">Date & Time</span>
                     </div>
-                    <h4 class="text-lg font-semibold">Task Information</h4>
-                </div>
-
-                <!-- Date Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-calendar-alt mr-2"></i>Date & Time
-                    </label>
-                    {% render_field form.date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
-                    <p class="text-xs text-slate-500">When is this task scheduled for?</p>
-                </div>
-
-                <!-- Task Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-list-check mr-2"></i>What needs to be done?
-                    </label>
-                    {% render_field form.do class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Describe what needs to be accomplished..." %}
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-500">Be specific about the task or action</p>
-                        <span id="doCharCount" class="text-xs text-slate-500">0/1000</span>
+                    <div class="flex items-center space-x-2 text-sm text-slate-400">
+                        <i class="fas fa-flag"></i>
+                        <span id="previewPriority">Priority</span>
                     </div>
-                </div>
-
-                <!-- Status Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-check-circle mr-2"></i>Status
-                    </label>
-                    <div class="flex items-center space-x-6">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            {% render_field form.done class="w-5 h-5 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" %}
-                            <span class="text-slate-300">Mark as completed</span>
-                        </label>
+                    <div class="flex items-center space-x-2 text-sm text-slate-400">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span id="previewEstimate">Time Estimate</span>
+                    </div>
+                    <div class="pt-4 border-t border-slate-800">
+                        <div class="flex flex-wrap gap-2" id="previewCategories">
+                            <span class="px-2 py-1 bg-slate-800 text-slate-400 rounded text-xs">No categories</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 2: Challenges & Considerations -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-amber-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-exclamation-triangle text-amber-400"></i>
+            <!-- Task Stats -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Task Stats</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-400">Productivity</span>
+                        <span class="text-emerald-400 font-medium">85%</span>
                     </div>
-                    <h4 class="text-lg font-semibold">Challenges & Considerations</h4>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-road mr-2"></i>What challenges might you face?
-                    </label>
-                    {% render_field form.challenges class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="List any potential obstacles, risks, or considerations..." %}
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-500">Identify potential roadblocks or concerns</p>
-                        <span id="challengesCharCount" class="text-xs text-slate-500">0/1000</span>
+                    <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-500 rounded-full" style="width: 85%"></div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Section 3: Gratitude & Value -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-heart text-violet-400"></i>
-                    </div>
-                    <h4 class="text-lg font-semibold">Gratitude & Value</h4>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-sparkles mr-2"></i>What value will this bring?
-                    </label>
-                    {% render_field form.gratitude class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Describe the benefits, value, or what you're grateful for..." %}
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-500">Focus on the positive outcomes and benefits</p>
-                        <span id="gratitudeCharCount" class="text-xs text-slate-500">0/1000</span>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-blue-400">12</div>
+                            <div class="text-xs text-slate-400 mt-1">This Week</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-violet-400">45</div>
+                            <div class="text-xs text-slate-400 mt-1">This Month</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="space-y-4">
-                <h4 class="text-lg font-semibold">Quick Actions</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setTodayDate()">
-                        <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
-                        <p class="font-medium">Today's Date</p>
-                        <p class="text-xs text-slate-400">Set to now</p>
+            <!-- Productivity Tips -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4 flex items-center">
+                    <i class="fas fa-lightbulb text-amber-400 mr-2"></i>Productivity Tips
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">1</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Break large tasks into smaller, manageable chunks</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">2</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Time-block your schedule for focused work</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">3</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Review completed tasks to boost motivation</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Quick Templates</h4>
+                <div class="space-y-3">
+                    <button onclick="applyTemplate('daily_planning')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Daily Planning</span>
+                            <i class="fas fa-sun text-amber-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Plan your day ahead</p>
                     </button>
-
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="markCompleted()">
-                        <i class="fas fa-check-circle text-emerald-400 text-lg mb-2"></i>
-                        <p class="font-medium">Mark Complete</p>
-                        <p class="text-xs text-slate-400">Set as done</p>
+                    <button onclick="applyTemplate('meeting_prep')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Meeting Prep</span>
+                            <i class="fas fa-users text-blue-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Prepare for meetings</p>
                     </button>
-
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
-                        <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
-                        <p class="font-medium">Clear Form</p>
-                        <p class="text-xs text-slate-400">Reset all fields</p>
+                    <button onclick="applyTemplate('learning_session')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Learning Session</span>
+                            <i class="fas fa-graduation-cap text-violet-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Study or skill development</p>
                     </button>
                 </div>
             </div>
 
-            <!-- Form Actions -->
-            <div class="pt-6 border-t border-slate-800">
-                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
-                        <label for="addAnother" class="text-sm text-slate-400">Add another task after saving</label>
+            <!-- Recent Tasks -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Recent Tasks</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check-circle text-emerald-400"></i>
+                            <div>
+                                <p class="text-sm font-medium">Complete report</p>
+                                <p class="text-xs text-slate-400">Today • 2 hours</p>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="flex items-center space-x-4">
-                        <a href="{% url 'nownext-list' %}"
-                           class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
-                            <i class="fas fa-times mr-2"></i>Cancel
-                        </a>
-                        <button type="submit"
-                                class="btn-primary px-8 py-3 flex items-center">
-                            <i class="fas fa-save mr-2"></i>
-                            {% if form.instance.pk %}Update Task{% else %}Create Task{% endif %}
-                        </button>
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-clock text-amber-400"></i>
+                            <div>
+                                <p class="text-sm font-medium">Team meeting</p>
+                                <p class="text-xs text-slate-400">Tomorrow • 1 hour</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-check-circle text-emerald-400"></i>
+                            <div>
+                                <p class="text-sm font-medium">Code review</p>
+                                <p class="text-xs text-slate-400">Yesterday • 45 min</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -205,59 +797,596 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Character counters
-    const doTextarea = document.querySelector('textarea[name="do"]');
-    const challengesTextarea = document.querySelector('textarea[name="challenges"]');
-    const gratitudeTextarea = document.querySelector('textarea[name="gratitude"]');
-
-    function setupCharCounter(textarea, counterId) {
-        if (textarea) {
-            const counter = document.getElementById(counterId);
-            textarea.addEventListener('input', function() {
-                const length = this.value.length;
-                counter.textContent = length + '/1000';
-                if (length > 900) {
-                    counter.classList.remove('text-slate-500');
-                    counter.classList.add('text-amber-400');
-                } else if (length > 980) {
-                    counter.classList.remove('text-amber-400');
-                    counter.classList.add('text-rose-400');
-                } else {
-                    counter.classList.remove('text-amber-400', 'text-rose-400');
-                    counter.classList.add('text-slate-500');
-                }
-            });
-            textarea.dispatchEvent(new Event('input'));
-        }
-    }
-
-    setupCharCounter(doTextarea, 'doCharCount');
-    setupCharCounter(challengesTextarea, 'challengesCharCount');
-    setupCharCounter(gratitudeTextarea, 'gratitudeCharCount');
+    initializeTaskForm();
+    updateTaskPreview();
+    calculateTaskMetrics();
 });
 
-function setTodayDate() {
-    const now = new Date();
-    const today = now.toISOString().slice(0, 16);
-    const dateInput = document.querySelector('input[name="date"]');
-    dateInput.value = today;
+function initializeTaskForm() {
+    const taskDo = document.getElementById('taskDo');
+    const taskChallenges = document.getElementById('taskChallenges');
+    const taskGratitude = document.getElementById('taskGratitude');
+    const taskDone = document.getElementById('taskDone');
+    const progressSlider = document.getElementById('progressSlider');
+    const doStrength = document.getElementById('doStrength');
+    const doCharCount = document.getElementById('doCharCount');
+    const challengesCharCount = document.getElementById('challengesCharCount');
+    const gratitudeCharCount = document.getElementById('gratitudeCharCount');
+
+    // Task description strength indicator
+    if (taskDo) {
+        taskDo.addEventListener('input', function() {
+            const length = this.value.length;
+            doCharCount.textContent = length + '/1000';
+
+            // Update strength indicator
+            if (length < 10) {
+                doStrength.textContent = 'Weak';
+                doStrength.className = 'text-xs px-2 py-1 rounded-full bg-rose-900/30 text-rose-400';
+            } else if (length < 50) {
+                doStrength.textContent = 'Good';
+                doStrength.className = 'text-xs px-2 py-1 rounded-full bg-amber-900/30 text-amber-400';
+            } else if (length < 200) {
+                doStrength.textContent = 'Strong';
+                doStrength.className = 'text-xs px-2 py-1 rounded-full bg-emerald-900/30 text-emerald-400';
+            }
+
+            if (length > 900) {
+                doCharCount.className = 'text-xs text-amber-400';
+            } else if (length > 980) {
+                doCharCount.className = 'text-xs text-rose-400';
+            } else {
+                doCharCount.className = 'text-xs text-slate-500';
+            }
+
+            updateTaskPreview();
+        });
+        taskDo.dispatchEvent(new Event('input'));
+    }
+
+    // Challenges character counter
+    if (taskChallenges) {
+        taskChallenges.addEventListener('input', function() {
+            const length = this.value.length;
+            challengesCharCount.textContent = length + '/1000';
+            if (length > 900) {
+                challengesCharCount.className = 'text-xs text-amber-400';
+            } else if (length > 980) {
+                challengesCharCount.className = 'text-xs text-rose-400';
+            } else {
+                challengesCharCount.className = 'text-xs text-slate-500';
+            }
+            calculateTaskMetrics();
+        });
+        taskChallenges.dispatchEvent(new Event('input'));
+    }
+
+    // Gratitude character counter
+    if (taskGratitude) {
+        taskGratitude.addEventListener('input', function() {
+            const length = this.value.length;
+            gratitudeCharCount.textContent = length + '/1000';
+            if (length > 900) {
+                gratitudeCharCount.className = 'text-xs text-amber-400';
+            } else if (length > 980) {
+                gratitudeCharCount.className = 'text-xs text-rose-400';
+            } else {
+                gratitudeCharCount.className = 'text-xs text-slate-500';
+            }
+            calculateTaskMetrics();
+        });
+        taskGratitude.dispatchEvent(new Event('input'));
+    }
+
+    // Progress slider
+    if (progressSlider) {
+        progressSlider.addEventListener('input', function() {
+            const value = this.value;
+            updateProgressVisuals(value);
+
+            // Update done checkbox if progress is 100%
+            if (value == 100) {
+                taskDone.checked = true;
+            } else if (value < 100 && taskDone.checked) {
+                taskDone.checked = false;
+            }
+        });
+    }
+
+    // Done checkbox
+    if (taskDone) {
+        taskDone.addEventListener('change', function() {
+            if (this.checked) {
+                progressSlider.value = 100;
+                updateProgressVisuals(100);
+            } else if (progressSlider.value == 100) {
+                progressSlider.value = 90;
+                updateProgressVisuals(90);
+            }
+        });
+    }
+
+    // Date field updates preview
+    const taskDate = document.getElementById('taskDate');
+    if (taskDate) {
+        taskDate.addEventListener('change', updateTaskPreview);
+    }
 }
 
+function updateProgressVisuals(value = 0) {
+    const progressValue = document.getElementById('progressValue');
+    const circularProgress = document.getElementById('circularProgress');
+    const completionBar = document.getElementById('completionBar');
+
+    progressValue.textContent = value + '%';
+    circularProgress.textContent = value + '%';
+    completionBar.style.width = value + '%';
+
+    // Update progress ring
+    const circle = document.querySelector('.progress-ring__circle');
+    const radius = 45;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (value / 100 * circumference);
+    circle.style.strokeDashoffset = offset;
+}
+
+function updateTaskPreview() {
+    const taskDo = document.getElementById('taskDo').value || 'Task Description';
+    const taskDate = document.getElementById('taskDate').value;
+    const priority = document.getElementById('taskPriority').value || 'Medium';
+    const timeEstimate = document.getElementById('timeEstimate').value || '30';
+    const categories = document.getElementById('taskCategories').value.split(',').filter(c => c);
+
+    document.getElementById('previewTask').textContent = taskDo.length > 50 ? taskDo.substring(0, 50) + '...' : taskDo;
+    document.getElementById('previewPriority').textContent = priority;
+    document.getElementById('previewEstimate').textContent = timeEstimate + ' min';
+
+    // Format date for preview
+    if (taskDate) {
+        const date = new Date(taskDate);
+        const formattedDate = date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+        const formattedTime = date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        document.getElementById('previewDate').textContent = `${formattedDate} • ${formattedTime}`;
+    }
+
+    // Update categories preview
+    const previewCategories = document.getElementById('previewCategories');
+    previewCategories.innerHTML = '';
+
+    if (categories.length > 0) {
+        const categoryColors = {
+            'work': 'blue',
+            'personal': 'purple',
+            'health': 'emerald',
+            'learning': 'amber',
+            'finance': 'cyan'
+        };
+
+        categories.forEach(category => {
+            const color = categoryColors[category] || 'slate';
+            const tag = document.createElement('span');
+            tag.className = `px-2 py-1 bg-${color}-900/30 text-${color}-400 rounded text-xs`;
+            tag.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+            previewCategories.appendChild(tag);
+        });
+    } else {
+        const noCategory = document.createElement('span');
+        noCategory.className = 'px-2 py-1 bg-slate-800 text-slate-400 rounded text-xs';
+        noCategory.textContent = 'No categories';
+        previewCategories.appendChild(noCategory);
+    }
+}
+
+function calculateTaskMetrics() {
+    const challenges = document.getElementById('taskChallenges').value;
+    const gratitude = document.getElementById('taskGratitude').value;
+
+    // Calculate impact score based on gratitude length and content
+    let impactScore = 8.5;
+    if (gratitude.length > 100) impactScore += 0.5;
+    if (gratitude.length > 300) impactScore += 0.5;
+    if (gratitude.includes('important') || gratitude.includes('critical') || gratitude.includes('essential')) {
+        impactScore += 0.3;
+    }
+
+    // Calculate satisfaction based on positive words
+    let satisfactionScore = 9.2;
+    const positiveWords = ['happy', 'grateful', 'excited', 'proud', 'satisfied', 'pleased'];
+    positiveWords.forEach(word => {
+        if (gratitude.toLowerCase().includes(word)) satisfactionScore += 0.1;
+    });
+
+    // Calculate risk level based on challenges
+    let riskLevel = 'Low';
+    if (challenges.length > 200) riskLevel = 'Medium';
+    if (challenges.length > 500) riskLevel = 'High';
+    if (challenges.includes('risk') || challenges.includes('danger') || challenges.includes('critical')) {
+        riskLevel = 'High';
+    }
+
+    // Calculate value ROI
+    let valueROI = 'Medium';
+    const valueWords = ['high value', 'significant', 'major impact', 'transformative'];
+    valueWords.forEach(word => {
+        if (gratitude.toLowerCase().includes(word)) valueROI = 'High';
+    });
+
+    // Update UI
+    document.getElementById('impactScore').textContent = impactScore.toFixed(1);
+    document.getElementById('satisfactionScore').textContent = satisfactionScore.toFixed(1);
+    document.getElementById('valueROI').textContent = valueROI;
+    document.getElementById('riskLevel').textContent = riskLevel;
+
+    // Update risk level color
+    const riskElement = document.getElementById('riskLevel');
+    riskElement.className = `text-sm font-medium text-${riskLevel === 'High' ? 'rose' : riskLevel === 'Medium' ? 'amber' : 'emerald'}-400`;
+}
+
+// Category functions
+function toggleCategory(category) {
+    const categoriesInput = document.getElementById('taskCategories');
+    let categories = categoriesInput.value.split(',').filter(c => c);
+
+    if (categories.includes(category)) {
+        categories = categories.filter(c => c !== category);
+        event.currentTarget.classList.remove('ring-2', 'ring-emerald-500');
+    } else {
+        categories.push(category);
+        event.currentTarget.classList.add('ring-2', 'ring-emerald-500');
+    }
+
+    categoriesInput.value = categories.join(',');
+    updateTaskPreview();
+}
+
+function addCustomCategory() {
+    const categoryName = prompt('Enter category name:');
+    if (categoryName && categoryName.trim()) {
+        const normalizedCategory = categoryName.toLowerCase().trim().replace(/\s+/g, '_');
+        const categoriesContainer = document.querySelector('.flex.flex-wrap.gap-2');
+
+        const newButton = document.createElement('button');
+        newButton.type = 'button';
+        newButton.className = 'category-tag px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-full text-sm';
+        newButton.innerHTML = `<i class="fas fa-tag mr-1"></i>${categoryName}`;
+        newButton.onclick = function() { toggleCategory(normalizedCategory); };
+
+        categoriesContainer.insertBefore(newButton, categoriesContainer.lastChild);
+    }
+}
+
+// Time estimate functions
+function setTimeEstimate(minutes) {
+    document.getElementById('timeEstimate').value = minutes;
+
+    // Visual feedback
+    document.querySelectorAll('.time-estimate-badge').forEach(badge => {
+        badge.classList.remove('bg-emerald-900/30', 'text-emerald-400');
+    });
+    event.currentTarget.classList.add('bg-emerald-900/30', 'text-emerald-400');
+
+    updateTaskPreview();
+}
+
+// Priority functions
+function setPriority(priority) {
+    document.getElementById('taskPriority').value = priority;
+
+    // Visual feedback
+    document.querySelectorAll('.priority-option').forEach(option => {
+        option.classList.remove('active');
+        option.classList.remove('ring-2', 'ring-emerald-500');
+    });
+    event.currentTarget.classList.add('active');
+    event.currentTarget.classList.add('ring-2', 'ring-emerald-500');
+
+    updateTaskPreview();
+}
+
+// Mood functions
+function setMood(mood) {
+    document.getElementById('taskMood').value = mood;
+
+    // Visual feedback
+    document.querySelectorAll('.mood-emoji').forEach(emoji => {
+        emoji.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+}
+
+// Date functions
+function setTodayDate() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5); // Start in 5 minutes
+    document.getElementById('taskDate').value = formatDateTimeForInput(now);
+    document.getElementById('taskDate').dispatchEvent(new Event('change'));
+}
+
+function formatDateTimeForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Smart features
+function generateSmartTask() {
+    const tasks = [
+        "Complete quarterly financial report analysis and prepare presentation for stakeholders",
+        "Review and update project documentation for the new feature implementation",
+        "Plan and schedule team meetings for the upcoming sprint planning session",
+        "Research and evaluate new tools for improving team productivity and collaboration",
+        "Organize and clean up code repository, removing deprecated functions and files"
+    ];
+    const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
+    document.getElementById('taskDo').value = randomTask;
+    document.getElementById('taskDo').dispatchEvent(new Event('input'));
+}
+
+function generateSmartDo() {
+    const expansions = [
+        "This task will help streamline our workflow and improve overall team efficiency.",
+        "Completing this will provide valuable insights for strategic decision-making.",
+        "This is essential for maintaining compliance with industry standards and regulations.",
+        "Successfully executing this will enhance our competitive advantage in the market.",
+        "This contributes directly to our quarterly goals and key performance indicators."
+    ];
+    const randomExpansion = expansions[Math.floor(Math.random() * expansions.length)];
+
+    const currentValue = document.getElementById('taskDo').value;
+    document.getElementById('taskDo').value = currentValue + (currentValue ? ' ' : '') + randomExpansion;
+    document.getElementById('taskDo').dispatchEvent(new Event('input'));
+}
+
+function generateGratitude() {
+    const gratitudeStatements = [
+        "I'm grateful for the opportunity to learn and grow through this task.",
+        "This contributes to my personal development and career advancement.",
+        "Completing this will bring me closer to achieving my long-term goals.",
+        "I appreciate the chance to make a meaningful impact through this work.",
+        "This task aligns with my values and helps me maintain work-life balance."
+    ];
+    const randomStatement = gratitudeStatements[Math.floor(Math.random() * gratitudeStatements.length)];
+
+    const currentValue = document.getElementById('taskGratitude').value;
+    document.getElementById('taskGratitude').value = currentValue + (currentValue ? '\n\n' : '') + randomStatement;
+    document.getElementById('taskGratitude').dispatchEvent(new Event('input'));
+}
+
+function applySuggestion(type) {
+    if (type === 'urgent') {
+        document.getElementById('taskDo').value = 'Fix critical bug in production - High priority';
+        setPriority('High');
+        setTimeEstimate(60);
+        toggleCategory('work');
+    } else if (type === 'planning') {
+        document.getElementById('taskDo').value = 'Plan Q2 strategy and set goals';
+        setPriority('Medium');
+        setTimeEstimate(120);
+        toggleCategory('work');
+    }
+    document.getElementById('taskDo').dispatchEvent(new Event('input'));
+}
+
+function applyTemplate(template) {
+    if (template === 'daily_planning') {
+        document.getElementById('taskDo').value = 'Daily planning and priority setting';
+        document.getElementById('taskChallenges').value = '• Distractions and interruptions\n• Unclear priorities\n• Time management\n• Procrastination';
+        document.getElementById('taskGratitude').value = '• Start the day with clarity and purpose\n• Increased productivity and focus\n• Better work-life balance\n• Reduced stress and anxiety';
+        setPriority('High');
+        setTimeEstimate(30);
+        toggleCategory('work');
+        toggleCategory('personal');
+    } else if (template === 'meeting_prep') {
+        document.getElementById('taskDo').value = 'Prepare for important client meeting';
+        document.getElementById('taskChallenges').value = '• Gathering all necessary information\n• Anticipating client questions\n• Technical presentation setup\n• Time constraints';
+        document.getElementById('taskGratitude').value = '• Professional impression on clients\n• Increased chance of successful deal\n• Builds trust and credibility\n• Opportunity for feedback and improvement';
+        setPriority('High');
+        setTimeEstimate(60);
+        toggleCategory('work');
+    } else if (template === 'learning_session') {
+        document.getElementById('taskDo').value = 'Complete online course module on advanced Python';
+        document.getElementById('taskChallenges').value = '• Complex concepts to understand\n• Time commitment required\n• Application of knowledge\n• Staying motivated';
+        document.getElementById('taskGratitude').value = '• Skill development for career growth\n• Increased job opportunities\n• Personal satisfaction\n• Staying updated with technology';
+        setPriority('Medium');
+        setTimeEstimate(90);
+        toggleCategory('learning');
+    }
+
+    setTodayDate();
+    document.getElementById('taskDo').dispatchEvent(new Event('input'));
+    document.getElementById('taskChallenges').dispatchEvent(new Event('input'));
+    document.getElementById('taskGratitude').dispatchEvent(new Event('input'));
+}
+
+function applyTaskTemplate() {
+    const templates = ['daily_planning', 'meeting_prep', 'learning_session'];
+    const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+    applyTemplate(randomTemplate);
+}
+
+// Challenge functions
+function addChallengeItem() {
+    const challengeItems = [
+        "• Time constraints and deadlines",
+        "• Limited resources or budget",
+        "• Technical complexity",
+        "• Stakeholder alignment",
+        "• Market competition",
+        "• Skill gaps",
+        "• Scope creep",
+        "• Communication barriers"
+    ];
+    const randomItem = challengeItems[Math.floor(Math.random() * challengeItems.length)];
+
+    const currentValue = document.getElementById('taskChallenges').value;
+    document.getElementById('taskChallenges').value = currentValue + (currentValue ? '\n' : '') + randomItem;
+    document.getElementById('taskChallenges').dispatchEvent(new Event('input'));
+}
+
+function clearChallenges() {
+    if (confirm('Clear all challenges?')) {
+        document.getElementById('taskChallenges').value = '';
+        document.getElementById('taskChallenges').dispatchEvent(new Event('input'));
+    }
+}
+
+// Gratitude functions
+function addGratitudeItem() {
+    const gratitudeItems = [
+        "• Personal growth and development",
+        "• Financial benefits or rewards",
+        "• Improved relationships",
+        "• Health and wellness benefits",
+        "• Career advancement",
+        "• Knowledge acquisition",
+        "• Contribution to society",
+        "• Peace of mind"
+    ];
+    const randomItem = gratitudeItems[Math.floor(Math.random() * gratitudeItems.length)];
+
+    const currentValue = document.getElementById('taskGratitude').value;
+    document.getElementById('taskGratitude').value = currentValue + (currentValue ? '\n' : '') + randomItem;
+    document.getElementById('taskGratitude').dispatchEvent(new Event('input'));
+}
+
+// Analysis functions
+function analyzeChallenges() {
+    const challenges = document.getElementById('taskChallenges').value;
+    let analysis = "Challenge Analysis:\n\n";
+
+    if (challenges.includes('time') || challenges.includes('deadline')) {
+        analysis += "✓ Time management needed\n";
+    }
+    if (challenges.includes('complex') || challenges.includes('difficult')) {
+        analysis += "✓ Consider breaking into smaller tasks\n";
+    }
+    if (challenges.includes('resource') || challenges.includes('budget')) {
+        analysis += "✓ Resource allocation required\n";
+    }
+    if (challenges.length < 50) {
+        analysis += "✓ Challenges seem manageable\n";
+    } else {
+        analysis += "✓ Multiple challenges detected\n";
+    }
+
+    alert(analysis);
+}
+
+function calculateValue() {
+    const gratitude = document.getElementById('taskGratitude').value;
+    let value = "Value Assessment:\n\n";
+
+    if (gratitude.includes('growth') || gratitude.includes('learn')) {
+        value += "✓ High personal development value\n";
+    }
+    if (gratitude.includes('money') || gratitude.includes('financial')) {
+        value += "✓ Direct financial benefits\n";
+    }
+    if (gratitude.includes('career') || gratitude.includes('job')) {
+        value += "✓ Career advancement potential\n";
+    }
+    if (gratitude.length < 100) {
+        value += "✓ Consider adding more value statements\n";
+    } else {
+        value += "✓ Well-defined value proposition\n";
+    }
+
+    alert(value);
+}
+
+// Text formatting
+function formatText(type, elementId) {
+    const textarea = document.getElementById(elementId);
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+
+    let formattedText = '';
+    switch(type) {
+        case 'bold':
+            formattedText = `**${selectedText}**`;
+            break;
+        case 'italic':
+            formattedText = `*${selectedText}*`;
+            break;
+        case 'list':
+            formattedText = selectedText.split('\n').map(line => `• ${line}`).join('\n');
+            break;
+    }
+
+    textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    textarea.selectionStart = start + formattedText.length;
+    textarea.selectionEnd = start + formattedText.length;
+    textarea.focus();
+    textarea.dispatchEvent(new Event('input'));
+}
+
+// Action functions
 function markCompleted() {
-    const doneCheckbox = document.querySelector('input[name="done"]');
-    doneCheckbox.checked = true;
+    document.getElementById('taskDone').checked = true;
+    document.getElementById('taskDone').dispatchEvent(new Event('change'));
 }
 
 function clearForm() {
     if (confirm('Are you sure you want to clear all form fields?')) {
         document.getElementById('taskForm').reset();
+        document.getElementById('taskCategories').value = '';
+        document.getElementById('taskPriority').value = 'Medium';
+        document.getElementById('taskMood').value = '🙂';
+        document.getElementById('timeEstimate').value = '30';
+        document.getElementById('doCharCount').textContent = '0/1000';
+        document.getElementById('challengesCharCount').textContent = '0/1000';
+        document.getElementById('gratitudeCharCount').textContent = '0/1000';
+        updateProgressVisuals(0);
 
-        // Reset character counters
-        ['doCharCount', 'challengesCharCount', 'gratitudeCharCount'].forEach(id => {
-            const counter = document.getElementById(id);
-            if (counter) counter.textContent = '0/1000';
+        // Reset category buttons
+        document.querySelectorAll('.category-tag').forEach(tag => {
+            tag.classList.remove('ring-2', 'ring-emerald-500');
         });
+
+        // Reset priority buttons
+        document.querySelectorAll('.priority-option').forEach(option => {
+            option.classList.remove('active');
+        });
+
+        // Reset time estimate badges
+        document.querySelectorAll('.time-estimate-badge').forEach(badge => {
+            badge.classList.remove('bg-emerald-900/30', 'text-emerald-400');
+        });
+
+        // Reset mood emojis
+        document.querySelectorAll('.mood-emoji').forEach(emoji => {
+            emoji.classList.remove('active');
+        });
+        document.querySelector('.mood-emoji:nth-child(3)').classList.add('active'); // Default smile
+
+        updateTaskPreview();
+        calculateTaskMetrics();
     }
 }
+
+// Form validation
+document.getElementById('taskForm').addEventListener('submit', function(e) {
+    const taskDo = document.getElementById('taskDo');
+
+    if (!taskDo.value.trim()) {
+        e.preventDefault();
+        alert('Please enter what needs to be done.');
+        taskDo.focus();
+        return false;
+    }
+});
 </script>
 {% endblock %}

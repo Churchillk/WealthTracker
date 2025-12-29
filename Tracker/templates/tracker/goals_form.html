@@ -22,228 +22,789 @@
         display: inline-block;
         margin-right: 8px;
     }
+
+    .quick-action-btn {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .milestone-item {
+        border-left: 2px solid var(--primary);
+        padding-left: 1rem;
+    }
+
+    .milestone-item.completed {
+        border-left-color: #10b981;
+    }
+
+    .milestone-item.in-progress {
+        border-left-color: #fbbf24;
+    }
+
+    .milestone-item.not-started {
+        border-left-color: #64748b;
+    }
+
+    .smart-suggestion {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .smart-suggestion:hover {
+        background: rgba(139, 92, 246, 0.2);
+    }
+
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+
+    .progress-ring__circle {
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.35s;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="card rounded-xl p-8">
-        <div class="flex items-center justify-between mb-8">
-            <div>
-                <h3 class="text-xl font-bold">
-                    <i class="fas fa-bullseye text-emerald-400 mr-2"></i>
-                    {% if form.instance.pk %}Edit Goal{% else %}Set New Goal{% endif %}
-                </h3>
-                <p class="text-slate-400 text-sm mt-1">
-                    {% if form.instance.pk %}
-                    Set on: {{ form.instance.date_set|date:"M d, Y" }}
-                    {% else %}
-                    Define your goal clearly to increase chances of success
+<div class="max-w-6xl mx-auto">
+    <!-- Breadcrumb Navigation -->
+    <div class="mb-6">
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'dashboard' %}" class="inline-flex items-center text-sm text-slate-400 hover:text-white">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-slate-600 mx-2"></i>
+                        <a href="{% url 'goals-list' %}" class="ml-1 text-sm text-slate-400 hover:text-white">Goals</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-slate-600 mx-2"></i>
+                        <span class="ml-1 text-sm text-emerald-400 font-medium">
+                            {% if form.instance.pk %}Edit Goal{% else %}New Goal{% endif %}
+                        </span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Form Column -->
+        <div class="lg:col-span-2">
+            <div class="card rounded-xl p-8">
+                <!-- Form Header -->
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-bullseye text-emerald-400 mr-2"></i>
+                            {% if form.instance.pk %}Edit Goal{% else %}Set New Goal{% endif %}
+                        </h3>
+                        <p class="text-slate-400 text-sm mt-1">
+                            {% if form.instance.pk %}
+                            Set on: {{ form.instance.date_set|date:"M d, Y" }} |
+                            Last updated: {% now "M d, Y" %}
+                            {% else %}
+                            Define your goal clearly to increase chances of success
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="px-3 py-1 {% if form.instance.achieved %}bg-emerald-900/30 text-emerald-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
+                            <i class="fas {% if form.instance.achieved %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
+                            {% if form.instance.achieved %}Achieved{% else %}In Progress{% endif %}
+                        </span>
+                        {% if form.instance.pk %}
+                        <div class="relative group">
+                            <button class="w-10 h-10 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center">
+                                <i class="fas fa-ellipsis-v text-slate-400"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm"><i class="fas fa-copy mr-2"></i>Duplicate Goal</a>
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm"><i class="fas fa-share-alt mr-2"></i>Share Goal</a>
+                                <a href="#" class="block px-4 py-3 hover:bg-slate-700 text-sm text-rose-400"><i class="fas fa-archive mr-2"></i>Archive</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Progress Overview -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-medium">Goal Progress Overview</h4>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-slate-400">Time remaining:</span>
+                            <span id="timeRemaining" class="font-medium text-emerald-400">--</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative w-20 h-20">
+                            <svg class="w-20 h-20 progress-ring" viewBox="0 0 100 100">
+                                <circle class="progress-ring__track" cx="50" cy="50" r="45" fill="transparent" stroke="rgba(30, 41, 59, 0.5)" stroke-width="8"/>
+                                <circle class="progress-ring__circle" cx="50" cy="50" r="45" fill="transparent" stroke="#10b981" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="198"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span id="circularProgress" class="text-xl font-bold text-emerald-400">30%</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-400">Progress</span>
+                                <span id="linearProgressValue" class="text-emerald-400">30%</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div id="linearProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full" style="width: 30%"></div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-xs text-slate-500">
+                                <div class="flex items-center">
+                                    <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+                                    <span>On Track</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+                                    <span>Needs Focus</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-2 h-2 bg-rose-500 rounded-full mr-2"></span>
+                                    <span>Behind Schedule</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Container -->
+                <form method="post" class="space-y-8" id="goalForm">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
+                            <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
+                        </div>
+                        <ul class="mt-2 text-sm text-rose-400 space-y-1">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                     {% endif %}
-                </p>
-            </div>
-            <div>
-                <span class="px-3 py-1 {% if form.instance.achieved %}bg-emerald-900/30 text-emerald-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
-                    <i class="fas {% if form.instance.achieved %}fa-check-circle{% else %}fa-clock{% endif %} mr-1"></i>
-                    {% if form.instance.achieved %}Achieved{% else %}In Progress{% endif %}
-                </span>
+
+                    <!-- Section 1: Goal Definition -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-flag text-emerald-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Goal Definition</h4>
+                            </div>
+                            <button type="button" onclick="generateSmartTitle()" class="text-sm text-violet-400 hover:text-violet-300 flex items-center">
+                                <i class="fas fa-magic mr-2"></i>AI Suggestion
+                            </button>
+                        </div>
+
+                        <!-- Goal Title Field -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-heading mr-2"></i>Goal Title
+                                </label>
+                                <span id="titleStrength" class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-400">Weak</span>
+                            </div>
+                            {% render_field form.goal_title class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="What do you want to achieve?" id="goalTitle" %}
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-slate-500">Make it specific, measurable, achievable, relevant, and time-bound (SMART)</p>
+                                <span id="titleCharCount" class="text-xs text-slate-500">0/100</span>
+                            </div>
+                        </div>
+
+                        <!-- Goal Description Field -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-align-left mr-2"></i>Goal Description
+                            </label>
+                            {% render_field form.goal_description class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="4" placeholder="Describe your goal in detail. Why is it important? What does success look like?..." id="goalDescription" %}
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="formatText('bold')" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded flex items-center justify-center">
+                                        <i class="fas fa-bold text-sm"></i>
+                                    </button>
+                                    <button type="button" onclick="formatText('italic')" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded flex items-center justify-center">
+                                        <i class="fas fa-italic text-sm"></i>
+                                    </button>
+                                    <button type="button" onclick="formatText('list')" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded flex items-center justify-center">
+                                        <i class="fas fa-list text-sm"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span id="descCharCount" class="text-xs text-slate-500">0/2000</span>
+                                    <button type="button" onclick="generateDescription()" class="text-xs text-violet-400 hover:text-violet-300">
+                                        <i class="fas fa-wand-magic-sparkles mr-1"></i>AI Expand
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Smart Suggestions -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <button type="button" onclick="applySuggestion('increase')" class="smart-suggestion p-3 rounded-lg text-left">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-emerald-400 font-medium">Increase</span>
+                                    <i class="fas fa-arrow-up text-emerald-400"></i>
+                                </div>
+                                <p class="text-sm text-slate-300">"Increase monthly income by 20% in Q2"</p>
+                            </button>
+                            <button type="button" onclick="applySuggestion('achieve')" class="smart-suggestion p-3 rounded-lg text-left">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-blue-400 font-medium">Achieve</span>
+                                    <i class="fas fa-trophy text-blue-400"></i>
+                                </div>
+                                <p class="text-sm text-slate-300">"Achieve AWS certification by year-end"</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Timeline & Progress -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-calendar-alt text-blue-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Timeline & Progress</h4>
+                            </div>
+                            <button type="button" onclick="calculateTimeline()" class="text-sm text-cyan-400 hover:text-cyan-300 flex items-center">
+                                <i class="fas fa-calculator mr-2"></i>Calculate Timeline
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Start Date Field -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-play-circle mr-2"></i>Start Date
+                                </label>
+                                <div class="relative">
+                                    {% render_field form.date_set class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                    <i class="fas fa-calendar text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                                </div>
+                                <p class="text-xs text-slate-500">When did you set this goal?</p>
+                            </div>
+
+                            <!-- End Date Field -->
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-flag-checkered mr-2"></i>Target Completion
+                                </label>
+                                <div class="relative">
+                                    {% render_field form.end_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
+                                    <i class="fas fa-calendar-day text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                                </div>
+                                <p class="text-xs text-slate-500">When do you aim to achieve this goal?</p>
+                            </div>
+                        </div>
+
+                        <!-- Timeline Visualization -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-slate-300">Goal Timeline</span>
+                                <span id="daysRemaining" class="text-sm text-emerald-400">-- days</span>
+                            </div>
+                            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div id="timelineProgress" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" style="width: 30%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-500 mt-2">
+                                <span id="startDateLabel">Start</span>
+                                <span>Today</span>
+                                <span id="endDateLabel">End</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Tracking -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-chart-line mr-2"></i>Progress Tracking
+                                </label>
+                                <button type="button" onclick="addMilestone()" class="text-sm text-amber-400 hover:text-amber-300 flex items-center">
+                                    <i class="fas fa-plus-circle mr-2"></i>Add Milestone
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="bg-slate-800/50 rounded-lg p-4">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-emerald-400" id="progressPercent">30%</div>
+                                        <div class="text-xs text-slate-400 mt-1">Current Progress</div>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-800/50 rounded-lg p-4">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-cyan-400" id="estimatedCompletion">--</div>
+                                        <div class="text-xs text-slate-400 mt-1">Est. Completion</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="range" min="0" max="100" value="30" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" id="progressSlider">
+                            <div class="flex justify-between text-xs text-slate-500 mt-2">
+                                <span>Not Started</span>
+                                <span>Quarter Way</span>
+                                <span>Half Way</span>
+                                <span>Almost There</span>
+                                <span>Achieved</span>
+                            </div>
+                        </div>
+
+                        <!-- Milestones Section -->
+                        <div class="space-y-4" id="milestonesContainer">
+                            <h5 class="text-sm font-medium text-slate-300">Milestones</h5>
+                            <div class="space-y-3">
+                                <div class="milestone-item completed">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-check-circle text-emerald-400"></i>
+                                            <span class="text-sm">Initial Planning</span>
+                                        </div>
+                                        <span class="text-xs text-slate-400">Completed</span>
+                                    </div>
+                                </div>
+                                <div class="milestone-item in-progress">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-spinner text-amber-400 animate-spin"></i>
+                                            <span class="text-sm">First Phase Complete</span>
+                                        </div>
+                                        <span class="text-xs text-amber-400">In Progress</span>
+                                    </div>
+                                </div>
+                                <div class="milestone-item not-started">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <i class="far fa-circle text-slate-500"></i>
+                                            <span class="text-sm">Final Review</span>
+                                        </div>
+                                        <span class="text-xs text-slate-400">Pending</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Goal Details -->
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-tags text-violet-400"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold">Goal Details</h4>
+                            </div>
+                            <button type="button" onclick="analyzeGoal()" class="text-sm text-purple-400 hover:text-purple-300 flex items-center">
+                                <i class="fas fa-chart-pie mr-2"></i>Analyze
+                            </button>
+                        </div>
+
+                        <!-- Goal Categories -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-layer-group mr-2"></i>Goal Category
+                            </label>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                <button type="button" onclick="setCategory('Financial')" class="goal-category p-4 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
+                                    <i class="fas fa-money-bill-wave text-emerald-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Financial</p>
+                                    <p class="text-xs text-slate-400 mt-1">Income, Savings</p>
+                                </button>
+                                <button type="button" onclick="setCategory('Career')" class="goal-category p-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
+                                    <i class="fas fa-briefcase text-blue-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Career</p>
+                                    <p class="text-xs text-slate-400 mt-1">Job, Skills</p>
+                                </button>
+                                <button type="button" onclick="setCategory('Education')" class="goal-category p-4 bg-cyan-900/20 hover:bg-cyan-900/30 border border-cyan-800/30 rounded-lg text-center">
+                                    <i class="fas fa-graduation-cap text-cyan-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Education</p>
+                                    <p class="text-xs text-slate-400 mt-1">Learning, Courses</p>
+                                </button>
+                                <button type="button" onclick="setCategory('Health')" class="goal-category p-4 bg-rose-900/20 hover:bg-rose-900/30 border border-rose-800/30 rounded-lg text-center">
+                                    <i class="fas fa-heartbeat text-rose-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Health</p>
+                                    <p class="text-xs text-slate-400 mt-1">Fitness, Wellness</p>
+                                </button>
+                                <button type="button" onclick="setCategory('Personal')" class="goal-category p-4 bg-purple-900/20 hover:bg-purple-900/30 border border-purple-800/30 rounded-lg text-center">
+                                    <i class="fas fa-user text-purple-400 text-lg mb-2"></i>
+                                    <p class="font-medium text-sm">Personal</p>
+                                    <p class="text-xs text-slate-400 mt-1">Growth, Habits</p>
+                                </button>
+                            </div>
+                            <input type="hidden" id="categoryInput" name="category">
+                        </div>
+
+                        <!-- Priority Level -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-exclamation-circle mr-2"></i>Priority Level
+                            </label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <button type="button" onclick="setPriority('Low')" class="priority-btn p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center">
+                                    <div class="flex items-center justify-center">
+                                        <span class="priority-indicator bg-slate-500"></span>
+                                        <span>Low</span>
+                                    </div>
+                                </button>
+                                <button type="button" onclick="setPriority('Medium')" class="priority-btn p-3 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center">
+                                    <div class="flex items-center justify-center">
+                                        <span class="priority-indicator bg-amber-500"></span>
+                                        <span>Medium</span>
+                                    </div>
+                                </button>
+                                <button type="button" onclick="setPriority('High')" class="priority-btn p-3 bg-rose-900/20 hover:bg-rose-900/30 border border-rose-800/30 rounded-lg text-center">
+                                    <div class="flex items-center justify-center">
+                                        <span class="priority-indicator bg-rose-500"></span>
+                                        <span>High</span>
+                                    </div>
+                                </button>
+                            </div>
+                            <input type="hidden" id="priorityInput" name="priority" value="Medium">
+                        </div>
+
+                        <!-- Achieved Field -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-check-circle mr-2"></i>Goal Status
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs text-slate-400">Confidence:</span>
+                                    <span id="confidenceLevel" class="text-xs font-medium text-emerald-400">75%</span>
+                                </div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <div class="flex items-center space-x-6">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <div class="relative">
+                                            {% render_field form.achieved class="sr-only peer" id="achievedCheckbox" %}
+                                            <div class="w-12 h-6 bg-slate-700 peer-checked:bg-emerald-500 rounded-full peer"></div>
+                                            <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition peer-checked:transform peer-checked:translate-x-6"></div>
+                                        </div>
+                                        <span class="text-slate-300">Mark as achieved</span>
+                                    </label>
+                                    <div class="flex-1">
+                                        <div class="h-1 bg-slate-700 rounded-full overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full" style="width: 75%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-3">Check this when you've successfully achieved this goal. You can also track partial progress above.</p>
+                            </div>
+                        </div>
+
+                        <!-- Tags & Notes -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-tags mr-2"></i>Tags
+                                </label>
+                                <div class="flex flex-wrap gap-2" id="tagsContainer">
+                                    <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-xs flex items-center">
+                                        <span>Quarterly Goal</span>
+                                        <button type="button" class="ml-2 text-emerald-300 hover:text-emerald-200">&times;</button>
+                                    </span>
+                                    <button type="button" onclick="addTag()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-full text-xs flex items-center">
+                                        <i class="fas fa-plus mr-1 text-xs"></i>Add Tag
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-sticky-note mr-2"></i>Private Notes
+                                </label>
+                                <textarea class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="3" placeholder="Add private notes about this goal..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Integration & Links -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-cyan-900/50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-link text-cyan-400"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">Integration & Links</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-project-diagram mr-2"></i>Related Projects
+                                </label>
+                                <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                    <option value="">Select a project...</option>
+                                    <option value="1">Wealth Tracker App</option>
+                                    <option value="2">Portfolio Website</option>
+                                    <option value="3">Investment Research</option>
+                                </select>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Linked Events
+                                </label>
+                                <select class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                    <option value="">Select an event...</option>
+                                    <option value="1">Q1 Review Meeting</option>
+                                    <option value="2">Certification Exam</option>
+                                    <option value="3">Annual Review</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-paperclip mr-2"></i>Attachments
+                            </label>
+                            <div class="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-slate-600 mb-3"></i>
+                                <p class="text-slate-400 mb-2">Drop files here or click to upload</p>
+                                <p class="text-xs text-slate-500">Supports PDF, DOC, XLS, JPG, PNG up to 10MB</p>
+                                <input type="file" multiple class="hidden" id="fileUpload">
+                                <button type="button" onclick="document.getElementById('fileUpload').click()" class="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">
+                                    <i class="fas fa-upload mr-2"></i>Browse Files
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="space-y-6">
+                        <h4 class="text-lg font-semibold">Quick Actions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <button type="button" onclick="setStartToday()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">Start Today</p>
+                                <p class="text-xs text-slate-400">Set start date</p>
+                            </button>
+
+                            <button type="button" onclick="setEndNextQuarter()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-calendar-plus text-violet-400 text-lg mb-2"></i>
+                                <p class="font-medium">End Next Quarter</p>
+                                <p class="text-xs text-slate-400">90 days from now</p>
+                            </button>
+
+                            <button type="button" onclick="setSmartGoals()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-brain text-cyan-400 text-lg mb-2"></i>
+                                <p class="font-medium">SMART Setup</p>
+                                <p class="text-xs text-slate-400">Apply SMART framework</p>
+                            </button>
+
+                            <button type="button" onclick="clearForm()" class="quick-action-btn p-4 rounded-lg text-center">
+                                <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
+                                <p class="font-medium">Clear Form</p>
+                                <p class="text-xs text-slate-400">Reset all fields</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="pt-6 border-t border-slate-800">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm text-slate-400">Add another goal after saving</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="setReminder" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
+                                    <span class="text-sm text-slate-400">Set weekly reminders</span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <a href="{% url 'goals-list' %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                <button type="submit"
+                                        class="btn-primary px-8 py-3 flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if form.instance.pk %}Update Goal{% else %}Set Goal{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <form method="post" class="space-y-8" id="goalForm">
-            {% csrf_token %}
-
-            <!-- Form Errors -->
-            {% if form.errors %}
-            <div class="p-6 bg-rose-900/50 border border-rose-800 rounded-lg">
-                <div class="flex items-center mb-3">
-                    <i class="fas fa-exclamation-triangle text-rose-400 text-xl mr-3"></i>
-                    <h4 class="text-rose-300 font-medium text-lg">Please correct the errors below</h4>
-                </div>
-                <ul class="mt-2 text-sm text-rose-400 space-y-1">
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                            <li><span class="font-medium">{{ field.label }}:</span> {{ error }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <!-- Section 1: Goal Definition -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-emerald-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-flag text-emerald-400"></i>
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Goal Statistics -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Goal Statistics</h4>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-400">Success Rate</span>
+                        <span class="text-emerald-400 font-medium">65%</span>
                     </div>
-                    <h4 class="text-lg font-semibold">Goal Definition</h4>
-                </div>
-
-                <!-- Goal Title Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-heading mr-2"></i>Goal Title
-                    </label>
-                    {% render_field form.goal_title class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="What do you want to achieve?" %}
-                    <p class="text-xs text-slate-500">Make it specific and measurable</p>
-                </div>
-
-                <!-- Goal Description Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-align-left mr-2"></i>Goal Description
-                    </label>
-                    {% render_field form.goal_description class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" rows="4" placeholder="Describe your goal in detail. Why is it important? What does success look like?..." %}
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-500">Detailed description helps maintain focus</p>
-                        <span id="descCharCount" class="text-xs text-slate-500">0/2000</span>
+                    <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-500 rounded-full" style="width: 65%"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-emerald-400">12</div>
+                            <div class="text-xs text-slate-400 mt-1">Total Goals</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-400">8</div>
+                            <div class="text-xs text-slate-400 mt-1">Active</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 2: Timeline & Progress -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-blue-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-calendar-alt text-blue-400"></i>
+            <!-- Goal Tips -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4 flex items-center">
+                    <i class="fas fa-lightbulb text-amber-400 mr-2"></i>Goal Setting Tips
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">1</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Break down large goals into smaller, manageable milestones</p>
                     </div>
-                    <h4 class="text-lg font-semibold">Timeline & Progress</h4>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">2</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Set specific deadlines to create urgency</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">3</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Review and adjust goals regularly based on progress</p>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs text-emerald-400">4</span>
+                        </div>
+                        <p class="text-sm text-slate-300">Celebrate small wins along the way</p>
+                    </div>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Start Date Field -->
+            <!-- Quick Templates -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Quick Templates</h4>
+                <div class="space-y-3">
+                    <button onclick="applyTemplate('financial')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Financial Goal</span>
+                            <i class="fas fa-money-bill-wave text-emerald-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Increase savings by 20% in 6 months</p>
+                    </button>
+                    <button onclick="applyTemplate('career')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Career Goal</span>
+                            <i class="fas fa-briefcase text-blue-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Get promoted within next year</p>
+                    </button>
+                    <button onclick="applyTemplate('learning')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-left">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-sm">Learning Goal</span>
+                            <i class="fas fa-graduation-cap text-cyan-400"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Complete certification course in 3 months</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Goal Health Check -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Goal Health Check</h4>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-300">SMART Score</span>
+                        <span class="text-lg font-bold text-emerald-400">8.5/10</span>
+                    </div>
                     <div class="space-y-2">
-                        <label class="block text-sm font-medium text-slate-300">
-                            <i class="fas fa-play-circle mr-2"></i>Start Date
-                        </label>
-                        {% render_field form.date_set class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
-                        <p class="text-xs text-slate-500">When did you set this goal?</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-400">Specific</span>
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <i class="far fa-star text-slate-600 text-xs"></i>
+                                <i class="far fa-star text-slate-600 text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-400">Measurable</span>
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <i class="far fa-star text-slate-600 text-xs"></i>
+                            </div>
+                        </div>
                     </div>
-
-                    <!-- End Date Field -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-slate-300">
-                            <i class="fas fa-flag-checkered mr-2"></i>Target Completion
-                        </label>
-                        {% render_field form.end_date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" %}
-                        <p class="text-xs text-slate-500">When do you aim to achieve this goal?</p>
-                    </div>
-                </div>
-
-                <!-- Progress Tracking -->
-                <div class="bg-slate-800/50 rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm text-slate-400">Goal Progress</span>
-                        <span id="progressValue" class="text-sm text-emerald-400">0%</span>
-                    </div>
-                    <input type="range" min="0" max="100" value="0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" id="progressSlider">
-                    <div class="flex justify-between text-xs text-slate-500 mt-2">
-                        <span>Not Started</span>
-                        <span>In Progress</span>
-                        <span>Achieved</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section 3: Goal Details -->
-            <div class="space-y-6">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-violet-900/50 rounded-full flex items-center justify-center">
-                        <i class="fas fa-tags text-violet-400"></i>
-                    </div>
-                    <h4 class="text-lg font-semibold">Goal Details</h4>
-                </div>
-
-                <!-- Goal Categories -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-layer-group mr-2"></i>Goal Category
-                    </label>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <button type="button" onclick="setCategory('Financial')" class="goal-category p-4 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
-                            <i class="fas fa-money-bill-wave text-emerald-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">Financial</p>
-                        </button>
-                        <button type="button" onclick="setCategory('Career')" class="goal-category p-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
-                            <i class="fas fa-briefcase text-blue-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">Career</p>
-                        </button>
-                        <button type="button" onclick="setCategory('Personal')" class="goal-category p-4 bg-purple-900/20 hover:bg-purple-900/30 border border-purple-800/30 rounded-lg text-center">
-                            <i class="fas fa-user text-purple-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">Personal</p>
-                        </button>
-                        <button type="button" onclick="setCategory('Health')" class="goal-category p-4 bg-rose-900/20 hover:bg-rose-900/30 border border-rose-800/30 rounded-lg text-center">
-                            <i class="fas fa-heartbeat text-rose-400 text-lg mb-2"></i>
-                            <p class="font-medium text-sm">Health</p>
-                        </button>
-                    </div>
-                    <input type="hidden" id="categoryInput" name="category">
-                </div>
-
-                <!-- Achieved Field -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-300">
-                        <i class="fas fa-check-circle mr-2"></i>Goal Status
-                    </label>
-                    <div class="flex items-center space-x-6">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            {% render_field form.achieved class="w-5 h-5 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" id="achievedCheckbox" %}
-                            <span class="text-slate-300">Mark as achieved</span>
-                        </label>
-                    </div>
-                    <p class="text-xs text-slate-500">Check this when you've successfully achieved this goal</p>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="space-y-4">
-                <h4 class="text-lg font-semibold">Quick Actions</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setStartToday()">
-                        <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
-                        <p class="font-medium">Start Today</p>
-                        <p class="text-xs text-slate-400">Set start date</p>
-                    </button>
-
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setEndNextQuarter()">
-                        <i class="fas fa-calendar-plus text-violet-400 text-lg mb-2"></i>
-                        <p class="font-medium">End Next Quarter</p>
-                        <p class="text-xs text-slate-400">90 days from now</p>
-                    </button>
-
-                    <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
-                        <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
-                        <p class="font-medium">Clear Form</p>
-                        <p class="text-xs text-slate-400">Reset all fields</p>
+                    <button onclick="runHealthCheck()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">
+                        <i class="fas fa-heartbeat mr-2"></i>Run Health Check
                     </button>
                 </div>
             </div>
 
-            <!-- Form Actions -->
-            <div class="pt-6 border-t border-slate-800">
-                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" id="addAnother" class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500">
-                        <label for="addAnother" class="text-sm text-slate-400">Add another goal after saving</label>
+            <!-- Recent Goals -->
+            <div class="card rounded-xl p-6">
+                <h4 class="font-semibold mb-4">Recent Goals</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div>
+                            <p class="text-sm font-medium">Save $5,000</p>
+                            <p class="text-xs text-slate-400">Financial • 60% done</p>
+                        </div>
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
                     </div>
-
-                    <div class="flex items-center space-x-4">
-                        <a href="{% url 'goals-list' %}"
-                           class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
-                            <i class="fas fa-times mr-2"></i>Cancel
-                        </a>
-                        <button type="submit"
-                                class="btn-primary px-8 py-3 flex items-center">
-                            <i class="fas fa-save mr-2"></i>
-                            {% if form.instance.pk %}Update Goal{% else %}Set Goal{% endif %}
-                        </button>
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div>
+                            <p class="text-sm font-medium">Learn Python</p>
+                            <p class="text-xs text-slate-400">Education • 45% done</p>
+                        </div>
+                        <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded">
+                        <div>
+                            <p class="text-sm font-medium">Lose 10kg</p>
+                            <p class="text-xs text-slate-400">Health • 75% done</p>
+                        </div>
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
                     </div>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -251,28 +812,55 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const descTextarea = document.querySelector('textarea[name="goal_description"]');
+    initializeGoalForm();
+    updateProgressVisuals();
+    calculateTimeRemaining();
+});
+
+function initializeGoalForm() {
+    const titleInput = document.getElementById('goalTitle');
+    const descTextarea = document.getElementById('goalDescription');
     const startDateInput = document.querySelector('input[name="date_set"]');
     const endDateInput = document.querySelector('input[name="end_date"]');
     const achievedCheckbox = document.getElementById('achievedCheckbox');
     const progressSlider = document.getElementById('progressSlider');
-    const progressValue = document.getElementById('progressValue');
+    const progressPercent = document.getElementById('progressPercent');
+    const titleCharCount = document.getElementById('titleCharCount');
+    const descCharCount = document.getElementById('descCharCount');
 
-    // Character counter for description
+    // Title character counter
+    if (titleInput) {
+        titleInput.addEventListener('input', function() {
+            const length = this.value.length;
+            titleCharCount.textContent = length + '/100';
+
+            // Update title strength indicator
+            const strengthSpan = document.getElementById('titleStrength');
+            if (length < 10) {
+                strengthSpan.textContent = 'Weak';
+                strengthSpan.className = 'text-xs px-2 py-1 rounded-full bg-rose-900/30 text-rose-400';
+            } else if (length < 20) {
+                strengthSpan.textContent = 'Good';
+                strengthSpan.className = 'text-xs px-2 py-1 rounded-full bg-amber-900/30 text-amber-400';
+            } else if (length < 50) {
+                strengthSpan.textContent = 'Strong';
+                strengthSpan.className = 'text-xs px-2 py-1 rounded-full bg-emerald-900/30 text-emerald-400';
+            }
+        });
+        titleInput.dispatchEvent(new Event('input'));
+    }
+
+    // Description character counter
     if (descTextarea) {
-        const descCharCount = document.getElementById('descCharCount');
         descTextarea.addEventListener('input', function() {
             const length = this.value.length;
             descCharCount.textContent = length + '/2000';
             if (length > 1800) {
-                descCharCount.classList.remove('text-slate-500');
-                descCharCount.classList.add('text-amber-400');
+                descCharCount.className = 'text-xs text-amber-400';
             } else if (length > 1950) {
-                descCharCount.classList.remove('text-amber-400');
-                descCharCount.classList.add('text-rose-400');
+                descCharCount.className = 'text-xs text-rose-400';
             } else {
-                descCharCount.classList.remove('text-amber-400', 'text-rose-400');
-                descCharCount.classList.add('text-slate-500');
+                descCharCount.className = 'text-xs text-slate-500';
             }
         });
         descTextarea.dispatchEvent(new Event('input'));
@@ -280,12 +868,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Progress slider
     progressSlider.addEventListener('input', function() {
-        progressValue.textContent = this.value + '%';
+        const value = this.value;
+        progressPercent.textContent = value + '%';
+        updateProgressVisuals(value);
+
+        // Update circular progress
+        const circle = document.querySelector('.progress-ring__circle');
+        const radius = 45;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (value / 100 * circumference);
+        circle.style.strokeDashoffset = offset;
 
         // If progress is 100%, check the achieved checkbox
-        if (this.value == 100) {
+        if (value == 100) {
             achievedCheckbox.checked = true;
-        } else if (this.value < 100 && achievedCheckbox.checked) {
+        } else if (value < 100 && achievedCheckbox.checked) {
             achievedCheckbox.checked = false;
         }
     });
@@ -294,16 +891,88 @@ document.addEventListener('DOMContentLoaded', function() {
     achievedCheckbox.addEventListener('change', function() {
         if (this.checked) {
             progressSlider.value = 100;
-            progressValue.textContent = '100%';
+            progressPercent.textContent = '100%';
+            updateProgressVisuals(100);
         } else if (progressSlider.value == 100) {
             progressSlider.value = 90;
-            progressValue.textContent = '90%';
+            progressPercent.textContent = '90%';
+            updateProgressVisuals(90);
         }
     });
-});
+
+    // Update timeline when dates change
+    [startDateInput, endDateInput].forEach(input => {
+        if (input) {
+            input.addEventListener('change', calculateTimeRemaining);
+        }
+    });
+}
+
+function updateProgressVisuals(value = 30) {
+    const linearProgressBar = document.getElementById('linearProgressBar');
+    const linearProgressValue = document.getElementById('linearProgressValue');
+    const circularProgress = document.getElementById('circularProgress');
+
+    linearProgressBar.style.width = value + '%';
+    linearProgressValue.textContent = value + '%';
+    circularProgress.textContent = value + '%';
+
+    // Update progress ring
+    const circle = document.querySelector('.progress-ring__circle');
+    const radius = 45;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (value / 100 * circumference);
+    circle.style.strokeDashoffset = offset;
+}
+
+function calculateTimeRemaining() {
+    const startInput = document.querySelector('input[name="date_set"]');
+    const endInput = document.querySelector('input[name="end_date"]');
+    const timeRemainingSpan = document.getElementById('timeRemaining');
+    const daysRemainingSpan = document.getElementById('daysRemaining');
+    const timelineProgress = document.getElementById('timelineProgress');
+    const startDateLabel = document.getElementById('startDateLabel');
+    const endDateLabel = document.getElementById('endDateLabel');
+
+    if (startInput.value && endInput.value) {
+        const startDate = new Date(startInput.value);
+        const endDate = new Date(endInput.value);
+        const today = new Date();
+
+        // Format dates for display
+        startDateLabel.textContent = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        endDateLabel.textContent = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        // Calculate time remaining
+        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const daysPassed = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
+        const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+
+        if (daysLeft > 0) {
+            timeRemainingSpan.textContent = daysLeft + ' days';
+            daysRemainingSpan.textContent = daysLeft + ' days';
+
+            // Update timeline progress
+            const progressPercent = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+            timelineProgress.style.width = progressPercent + '%';
+
+            // Update estimated completion
+            const estCompletionSpan = document.getElementById('estimatedCompletion');
+            estCompletionSpan.textContent = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } else if (daysLeft === 0) {
+            timeRemainingSpan.textContent = 'Today!';
+            daysRemainingSpan.textContent = '0 days';
+            timelineProgress.style.width = '100%';
+        } else {
+            timeRemainingSpan.textContent = 'Overdue';
+            daysRemainingSpan.textContent = 'Overdue';
+            timelineProgress.style.width = '100%';
+        }
+    }
+}
 
 function setCategory(category) {
-    const titleInput = document.querySelector('input[name="goal_title"]');
+    const titleInput = document.getElementById('goalTitle');
     const currentValue = titleInput.value;
 
     // Remove existing category brackets if present
@@ -320,39 +989,251 @@ function setCategory(category) {
     event.currentTarget.classList.add('ring-2', 'ring-emerald-500');
 }
 
+function setPriority(priority) {
+    document.getElementById('priorityInput').value = priority;
+
+    // Visual feedback
+    document.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.className = 'priority-btn p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center';
+    });
+
+    if (priority === 'Medium') {
+        event.currentTarget.className = 'priority-btn p-3 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded-lg text-center';
+    } else if (priority === 'High') {
+        event.currentTarget.className = 'priority-btn p-3 bg-rose-900/20 hover:bg-rose-900/30 border border-rose-800/30 rounded-lg text-center';
+    }
+}
+
+function generateSmartTitle() {
+    const titles = [
+        "Increase monthly passive income by $500 in 6 months",
+        "Complete AWS certification by end of Q3",
+        "Save 20% of income for emergency fund",
+        "Lose 10kg through diet and exercise",
+        "Read 12 business books this year"
+    ];
+    const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+    document.getElementById('goalTitle').value = randomTitle;
+    document.getElementById('goalTitle').dispatchEvent(new Event('input'));
+}
+
+function generateDescription() {
+    const descriptions = [
+        "This goal will help me achieve financial independence and build wealth for the future. Success means having multiple income streams and being debt-free.",
+        "Achieving this certification will open up new career opportunities and increase my earning potential by at least 25%.",
+        "Building this habit will provide financial security and peace of mind, allowing me to handle unexpected expenses without stress.",
+        "Improving my health will increase energy levels, boost confidence, and improve overall quality of life and longevity."
+    ];
+    const randomDesc = descriptions[Math.floor(Math.random() * descriptions.length)];
+    document.getElementById('goalDescription').value = randomDesc;
+    document.getElementById('goalDescription').dispatchEvent(new Event('input'));
+}
+
+function applySuggestion(type) {
+    if (type === 'increase') {
+        document.getElementById('goalTitle').value = 'Increase monthly income by 20% in Q2';
+    } else if (type === 'achieve') {
+        document.getElementById('goalTitle').value = 'Achieve AWS certification by year-end';
+    }
+    document.getElementById('goalTitle').dispatchEvent(new Event('input'));
+}
+
+function calculateTimeline() {
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 6); // Default 6 months
+
+    document.querySelector('input[name="date_set"]').value = startDate.toISOString().slice(0, 16);
+    document.querySelector('input[name="end_date"]').value = endDate.toISOString().slice(0, 16);
+
+    calculateTimeRemaining();
+}
+
+function addMilestone() {
+    const container = document.getElementById('milestonesContainer');
+    const milestoneDiv = document.createElement('div');
+    milestoneDiv.className = 'milestone-item not-started';
+    milestoneDiv.innerHTML = `
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="far fa-circle text-slate-500"></i>
+                <input type="text" class="bg-transparent border-none focus:outline-none text-sm" placeholder="New milestone..." value="New Milestone">
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="markMilestone(this, 'completed')" class="text-xs text-slate-400 hover:text-emerald-400">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-xs text-slate-400 hover:text-rose-400">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(milestoneDiv);
+}
+
+function markMilestone(button, status) {
+    const milestoneItem = button.closest('.milestone-item');
+    milestoneItem.className = `milestone-item ${status}`;
+
+    const icon = milestoneItem.querySelector('i');
+    if (status === 'completed') {
+        icon.className = 'fas fa-check-circle text-emerald-400';
+        button.parentElement.querySelector('span').textContent = 'Completed';
+    } else if (status === 'in-progress') {
+        icon.className = 'fas fa-spinner text-amber-400 animate-spin';
+        button.parentElement.querySelector('span').textContent = 'In Progress';
+    }
+}
+
+function addTag() {
+    const container = document.getElementById('tagsContainer');
+    const tagInput = document.createElement('input');
+    tagInput.type = 'text';
+    tagInput.className = 'px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-24';
+    tagInput.placeholder = 'New tag';
+    tagInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const tagValue = this.value.trim();
+            if (tagValue) {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-xs flex items-center';
+                tagSpan.innerHTML = `
+                    <span>${tagValue}</span>
+                    <button type="button" class="ml-2 text-emerald-300 hover:text-emerald-200" onclick="this.parentElement.remove()">&times;</button>
+                `;
+                container.insertBefore(tagSpan, this);
+                this.value = '';
+                this.focus();
+            }
+        }
+    });
+    container.appendChild(tagInput);
+    tagInput.focus();
+}
+
 function setStartToday() {
     const now = new Date();
     const today = now.toISOString().slice(0, 16);
-    const startDateInput = document.querySelector('input[name="date_set"]');
-    startDateInput.value = today;
+    document.querySelector('input[name="date_set"]').value = today;
+    calculateTimeRemaining();
 }
 
 function setEndNextQuarter() {
     const now = new Date();
     const nextQuarter = new Date(now.setMonth(now.getMonth() + 3));
     const nextQuarterStr = nextQuarter.toISOString().slice(0, 16);
-    const endDateInput = document.querySelector('input[name="end_date"]');
-    endDateInput.value = nextQuarterStr;
+    document.querySelector('input[name="end_date"]').value = nextQuarterStr;
+    calculateTimeRemaining();
+}
+
+function setSmartGoals() {
+    // Apply SMART framework
+    document.getElementById('goalTitle').value = 'Increase monthly savings by 20% within 6 months';
+    document.getElementById('goalDescription').value = 'SPECIFIC: Increase savings rate\nMEASURABLE: Track monthly savings\nACHIEVABLE: Based on current income\nRELEVANT: Supports financial goals\nTIME-BOUND: 6 month timeframe';
+    setStartToday();
+    setEndNextQuarter();
+    setCategory('Financial');
+    setPriority('High');
+}
+
+function analyzeGoal() {
+    alert('Goal Analysis:\n\n✓ Clear and specific title\n✓ Realistic timeline\n✓ Measurable progress tracking\n✓ Priority level set\n\nRecommendation: Add specific milestones to track progress more effectively.');
+}
+
+function runHealthCheck() {
+    const healthScore = Math.floor(Math.random() * 30) + 70; // Random score 70-100
+    const scoreElement = document.querySelector('.card:last-child .text-lg');
+    scoreElement.textContent = healthScore + '/10';
+
+    if (healthScore >= 85) {
+        scoreElement.className = 'text-lg font-bold text-emerald-400';
+        alert('Excellent! Your goal is well-structured and has a high chance of success.');
+    } else if (healthScore >= 70) {
+        scoreElement.className = 'text-lg font-bold text-amber-400';
+        alert('Good job! Consider making your goal more specific or measurable.');
+    } else {
+        scoreElement.className = 'text-lg font-bold text-rose-400';
+        alert('Needs improvement. Review the SMART criteria and make your goal more specific.');
+    }
+}
+
+function applyTemplate(template) {
+    if (template === 'financial') {
+        document.getElementById('goalTitle').value = 'Save $10,000 for emergency fund in 12 months';
+        document.getElementById('goalDescription').value = 'Build a 6-month emergency fund to provide financial security and peace of mind. Track monthly savings progress and adjust budget as needed.';
+        setCategory('Financial');
+    } else if (template === 'career') {
+        document.getElementById('goalTitle').value = 'Get promoted to Senior Developer by end of year';
+        document.getElementById('goalDescription').value = 'Demonstrate leadership skills, complete key projects, and improve technical expertise to qualify for promotion.';
+        setCategory('Career');
+    } else if (template === 'learning') {
+        document.getElementById('goalTitle').value = 'Complete Python & Django mastery course in 3 months';
+        document.getElementById('goalDescription').value = 'Master backend development with Python and Django framework to build scalable web applications and improve career prospects.';
+        setCategory('Education');
+    }
+
+    setStartToday();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + (template === 'learning' ? 3 : 12));
+    document.querySelector('input[name="end_date"]').value = endDate.toISOString().slice(0, 16);
+    calculateTimeRemaining();
+}
+
+function formatText(type) {
+    const textarea = document.getElementById('goalDescription');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+
+    let formattedText = '';
+    switch(type) {
+        case 'bold':
+            formattedText = `**${selectedText}**`;
+            break;
+        case 'italic':
+            formattedText = `*${selectedText}*`;
+            break;
+        case 'list':
+            formattedText = selectedText.split('\n').map(line => `• ${line}`).join('\n');
+            break;
+    }
+
+    textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    textarea.selectionStart = start + formattedText.length;
+    textarea.selectionEnd = start + formattedText.length;
+    textarea.focus();
 }
 
 function clearForm() {
     if (confirm('Are you sure you want to clear all form fields?')) {
         document.getElementById('goalForm').reset();
         document.getElementById('categoryInput').value = '';
+        document.getElementById('priorityInput').value = 'Medium';
+        document.getElementById('titleCharCount').textContent = '0/100';
         document.getElementById('descCharCount').textContent = '0/2000';
-        document.getElementById('progressValue').textContent = '0%';
+        document.getElementById('progressPercent').textContent = '0%';
+        document.getElementById('linearProgressValue').textContent = '0%';
+        document.getElementById('circularProgress').textContent = '0%';
         document.getElementById('progressSlider').value = 0;
+        document.getElementById('linearProgressBar').style.width = '0%';
+        updateProgressVisuals(0);
 
         // Reset category buttons
         document.querySelectorAll('.goal-category').forEach(opt => {
             opt.classList.remove('ring-2', 'ring-emerald-500');
+        });
+
+        // Reset priority buttons
+        document.querySelectorAll('.priority-btn').forEach(btn => {
+            btn.className = 'priority-btn p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-center';
         });
     }
 }
 
 // Form validation
 document.getElementById('goalForm').addEventListener('submit', function(e) {
-    const titleInput = document.querySelector('input[name="goal_title"]');
+    const titleInput = document.getElementById('goalTitle');
     const startDateInput = document.querySelector('input[name="date_set"]');
     const endDateInput = document.querySelector('input[name="end_date"]');
 

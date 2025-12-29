@@ -3,8 +3,12 @@ from django.shortcuts import render
 # Create your views here.
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
+from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from django.urls import reverse_lazy
 from django.db.models import Sum, Count
 from django.utils import timezone
@@ -369,6 +373,40 @@ class EventListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Event.objects.filter(user=self.request.user).order_by('start_date')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        now = timezone.now()
+
+        # Get all events for the current user
+        events = Event.objects.filter(user=user)
+
+        # Calculate stats
+        context['upcoming_count'] = events.filter(start_date__gte=now).count()
+        context['attended_count'] = events.filter(attended=True).count()
+        context['month_count'] = events.filter(
+            start_date__year=now.year,
+            start_date__month=now.month
+        ).count()
+        context['hackathon_count'] = events.filter(category='Hackathon').count()
+
+        # Get upcoming events (next 30 days)
+        thirty_days_later = now + timedelta(days=30)
+        context['upcoming_events'] = events.filter(
+            start_date__range=[now, thirty_days_later]
+        ).order_by('start_date')
+
+        # Get past events
+        context['past_events'] = events.filter(
+            start_date__lt=now
+        ).order_by('-start_date')
+
+        # Add current date for calendar
+        context['current_date'] = now
+        context['now'] = now
+
+        return context
+
 class EventCreateView(LoginRequiredMixin, CreateView):
     model = Event
     form_class = EventForm
@@ -395,3 +433,15 @@ class EventDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_queryset(self):
         return Event.objects.filter(user=self.request.user)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class MarkEventAttendedView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        try:
+            event = Event.objects.get(pk=pk, user=request.user)
+            event.attended = True
+            event.save()
+            return JsonResponse({'success': True})
+        except Event.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Event not found'})
