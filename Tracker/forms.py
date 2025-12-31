@@ -52,8 +52,9 @@ class NowNextForm(forms.ModelForm):
 class ProjectsForm(forms.ModelForm):
     class Meta:
         model = Projects
-        fields = ['name', 'what_next', 'description', 'end_date', 'status']
+        fields = ['name', 'what_next', 'description', 'date_set', 'end_date', 'status']
         widgets = {
+            'date_set': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }
