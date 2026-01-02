@@ -1,0 +1,128 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Remove Picture{% endblock %}
+{% block header_title %}Remove Picture{% endblock %}
+{% block header_subtitle %}Confirm removal{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{% url 'dreamcar-detail' car_id %}"
+           class="inline-flex items-center text-emerald-400 hover:text-emerald-300">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Car Details
+        </a>
+    </div>
+
+    <div class="card rounded-xl p-8">
+        <div class="text-center">
+            <!-- Warning Icon -->
+            <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-amber-900/30 to-rose-900/30 flex items-center justify-center">
+                <i class="fas fa-trash-alt text-3xl text-amber-400"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Remove Picture?</h2>
+            <p class="text-slate-400 mb-8">This picture will be removed from the car's gallery</p>
+
+            <!-- Picture Preview -->
+            <div class="max-w-md mx-auto mb-8">
+                <div class="relative rounded-xl overflow-hidden bg-slate-900">
+                    <img src="{{ object.picture.url }}"
+                         alt="{{ object.brand }} {{ object.model }}"
+                         class="w-full h-64 object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+
+                    <div class="absolute bottom-4 left-4 right-4">
+                        <p class="text-white font-bold text-lg">{{ object.brand }} {{ object.model }}</p>
+                        <p class="text-slate-300 text-sm">{{ object.year }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Car Info -->
+            <div class="mb-8 p-4 bg-slate-800/30 rounded-lg">
+                <div class="flex items-center justify-center mb-3">
+                    <i class="fas fa-car text-emerald-400 mr-3"></i>
+                    <h3 class="text-lg font-semibold">{{ car.brand }} {{ car.model }}</h3>
+                </div>
+                <p class="text-sm text-slate-400">This picture will be removed from the above car's collection</p>
+            </div>
+
+            <!-- Warning Message -->
+            <div class="mb-8 p-4 rounded-lg bg-amber-900/20 border border-amber-800/50">
+                <p class="text-amber-300">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <strong>Note:</strong> The picture file will still exist in the system, but it will no longer be associated with this car.
+                </p>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-slate-800/30 rounded-lg p-4">
+                    <p class="text-slate-400 text-sm mb-1">Remaining Pictures</p>
+                    <p class="text-2xl font-bold text-slate-300">{{ remaining_pictures }}</p>
+                </div>
+                <div class="bg-slate-800/30 rounded-lg p-4">
+                    <p class="text-slate-400 text-sm mb-1">Total Pictures</p>
+                    <p class="text-lg font-medium text-slate-300">{{ total_pictures }}</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-center space-x-4">
+                <a href="{% url 'dreamcar-detail' car_id %}"
+                   class="px-8 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors w-32">
+                    Cancel
+                </a>
+
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="px-8 py-3 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 w-32">
+                        <i class="fas fa-trash mr-2"></i> Remove
+                    </button>
+                </form>
+            </div>
+
+            <!-- Alternative Action -->
+            <div class="mt-8 pt-6 border-t border-slate-700">
+                <p class="text-slate-400 text-sm mb-3">Instead of removing, you can:</p>
+                <a href="{% url 'dreamcar-detail' car_id %}"
+                   class="inline-flex items-center text-blue-400 hover:text-blue-300">
+                    <i class="fas fa-eye mr-2"></i> View all pictures in gallery
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Pictures -->
+    {% if other_pictures %}
+    <div class="mt-8 card rounded-xl p-6">
+        <h3 class="text-lg font-semibold mb-4">Other Pictures of This Car</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for picture in other_pictures|slice:":4" %}
+            <a href="{% url 'dreamcar-detail' car_id %}" class="block">
+                <div class="relative h-32 rounded-lg overflow-hidden group">
+                    <img src="{{ picture.picture.url }}"
+                         alt="{{ picture.brand }} {{ picture.model }}"
+                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors"></div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <p class="text-sm text-slate-400 mt-4 text-center">
+            You still have {{ remaining_pictures }} other pictures of this car
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add context to the delete_picture view
+window.car_id = {{ car_id }};
+</script>
+{% endblock %}

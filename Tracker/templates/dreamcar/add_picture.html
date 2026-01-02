@@ -1,0 +1,367 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Add Picture to {{ car.brand }} {{ car.model }}{% endblock %}
+{% block header_title %}Add New Picture{% endblock %}
+{% block header_subtitle %}Enhance your dream car collection{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{% url 'dreamcar-detail' car.pk %}"
+           class="inline-flex items-center text-emerald-400 hover:text-emerald-300">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Car Details
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column - Car Info -->
+        <div class="lg:col-span-1">
+            <div class="card rounded-xl p-6">
+                <div class="text-center">
+                    <!-- Car Icon -->
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-emerald-900/30 to-blue-900/30 flex items-center justify-center">
+                        <i class="fas fa-car text-2xl text-emerald-400"></i>
+                    </div>
+
+                    <h3 class="text-xl font-bold mb-2">{{ car.brand }} {{ car.model }}</h3>
+                    <p class="text-slate-400 mb-4">{{ car.year }}</p>
+
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Price:</span>
+                            <span class="font-bold text-emerald-400">${{ car.price|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Horsepower:</span>
+                            <span class="font-medium">{{ car.horsepower }} HP</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Status:</span>
+                            <span class="px-3 py-1 {% if car.bought %}bg-emerald-900/30 text-emerald-400{% else %}bg-amber-900/30 text-amber-400{% endif %} rounded-full text-sm">
+                                {% if car.bought %}Owned{% else %}Dream Car{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Pictures -->
+                <div class="mt-8 pt-6 border-t border-slate-700">
+                    <h4 class="text-sm font-semibold text-slate-300 mb-3">
+                        <i class="fas fa-images mr-2"></i> Current Pictures
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        {% for picture in car.pictures.all|slice:":4" %}
+                        <div class="relative h-20 rounded-lg overflow-hidden">
+                            <img src="{{ picture.picture.url }}"
+                                 alt="{{ picture.brand }} {{ picture.model }}"
+                                 class="w-full h-full object-cover">
+                        </div>
+                        {% empty %}
+                        <div class="col-span-2 text-center py-4">
+                            <i class="fas fa-image text-3xl text-slate-600 mb-2"></i>
+                            <p class="text-sm text-slate-400">No pictures yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">{{ car.pictures.count }} pictures total</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Form -->
+        <div class="lg:col-span-2">
+            <div class="card rounded-xl p-6">
+                <h2 class="text-2xl font-bold mb-6">Add New Picture</h2>
+
+                <form method="post" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-4 rounded-lg bg-rose-900/50 text-rose-300 border border-rose-800">
+                        <p class="font-semibold mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Please correct the errors below:</p>
+                        <ul class="list-disc list-inside text-sm">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Auto-fill from car option -->
+                    <div class="mb-4">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox"
+                                   id="auto-fill"
+                                   checked
+                                   class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-emerald-500">
+                            <span class="ml-2 text-sm text-slate-300">Auto-fill from car details</span>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Brand -->
+                        <div>
+                            <label for="{{ form.brand.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                Brand
+                            </label>
+                            {{ form.brand }}
+                        </div>
+
+                        <!-- Model -->
+                        <div>
+                            <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                Model
+                            </label>
+                            {{ form.model }}
+                        </div>
+
+                        <!-- Year -->
+                        <div>
+                            <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                Year
+                            </label>
+                            {{ form.year }}
+                        </div>
+                    </div>
+
+                    <!-- Picture Upload -->
+                    <div>
+                        <label for="{{ form.picture.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                            Picture *
+                        </label>
+
+                        <!-- File Input Styled -->
+                        <div class="relative">
+                            {{ form.picture }}
+
+                            <!-- Drag & Drop Area -->
+                            <div id="drop-area"
+                                 class="mt-2 p-8 bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-700 hover:border-emerald-500 transition-colors cursor-pointer text-center">
+                                <div id="upload-content">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-slate-500 mb-4"></i>
+                                    <p class="text-lg font-medium text-slate-300 mb-2">Drag & drop your picture here</p>
+                                    <p class="text-sm text-slate-400">or click to browse</p>
+                                    <p class="text-xs text-slate-500 mt-2">JPG, PNG, WEBP up to 10MB</p>
+                                </div>
+
+                                <!-- Preview -->
+                                <div id="preview" class="hidden mt-4">
+                                    <div class="relative inline-block">
+                                        <img id="preview-image" class="max-h-48 rounded-lg shadow-lg">
+                                        <button type="button"
+                                                onclick="clearPreview()"
+                                                class="absolute -top-2 -right-2 w-8 h-8 bg-rose-600 hover:bg-rose-700 rounded-full flex items-center justify-center text-white">
+                                            <i class="fas fa-times text-sm"></i>
+                                        </button>
+                                    </div>
+                                    <p id="file-name" class="text-sm text-emerald-400 mt-2"></p>
+                                    <p id="file-size" class="text-xs text-slate-400"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs text-slate-400">Upload a high-quality picture of your dream car</p>
+                    </div>
+
+                    <!-- Image Preview Note -->
+                    <div class="p-4 bg-blue-900/20 rounded-lg border border-blue-800/50">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-400 mt-1 mr-3"></i>
+                            <div>
+                                <p class="text-sm text-blue-300 font-medium mb-1">Image Preview</p>
+                                <p class="text-xs text-blue-400">The uploaded image will be displayed here for preview before submission.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center justify-between pt-6 border-t border-slate-700">
+                        <a href="{% url 'dreamcar-detail' car.pk %}"
+                           class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors">
+                            Cancel
+                        </a>
+
+                        <div class="flex items-center space-x-4">
+                            <button type="reset"
+                                    onclick="clearForm()"
+                                    class="px-6 py-3 bg-amber-900/30 hover:bg-amber-900/50 text-amber-400 hover:text-amber-300 rounded-lg font-medium transition-colors">
+                                <i class="fas fa-undo mr-2"></i> Clear
+                            </button>
+
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-upload mr-2"></i> Upload Picture
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tips Section -->
+            <div class="mt-6 p-6 bg-gradient-to-r from-slate-800/50 to-emerald-900/20 rounded-xl border border-slate-700">
+                <h3 class="text-lg font-semibold mb-3 text-emerald-400">
+                    <i class="fas fa-lightbulb mr-2"></i> Tips for Great Car Pictures
+                </h3>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                        <span>Use high-resolution images for better display quality</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                        <span>Upload multiple angles (front, side, interior, etc.)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                        <span>Use natural lighting for better color accuracy</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                        <span>Focus on the car - avoid cluttered backgrounds</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-fill functionality
+    const autoFillCheckbox = document.getElementById('auto-fill');
+    const brandField = document.getElementById('id_brand');
+    const modelField = document.getElementById('id_model');
+    const yearField = document.getElementById('id_year');
+    const fileInput = document.getElementById('id_picture');
+    const dropArea = document.getElementById('drop-area');
+    const uploadContent = document.getElementById('upload-content');
+    const preview = document.getElementById('preview');
+    const previewImage = document.getElementById('preview-image');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+
+    // Set initial values from car
+    brandField.value = '{{ car.brand }}';
+    modelField.value = '{{ car.model }}';
+    yearField.value = '{{ car.year }}';
+
+    // Auto-fill toggle
+    autoFillCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            brandField.value = '{{ car.brand }}';
+            modelField.value = '{{ car.model }}';
+            yearField.value = '{{ car.year }}';
+        } else {
+            brandField.value = '';
+            modelField.value = '';
+            yearField.value = '';
+        }
+    });
+
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropArea.classList.add('border-emerald-500');
+        dropArea.classList.add('bg-emerald-900/20');
+    }
+
+    function unhighlight() {
+        dropArea.classList.remove('border-emerald-500');
+        dropArea.classList.remove('bg-emerald-900/20');
+    }
+
+    dropArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    // Click to browse
+    dropArea.addEventListener('click', () => fileInput.click());
+
+    // File input change
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    function handleFiles(files) {
+        const file = files[0];
+        if (!file) return;
+
+        if (!file.type.match('image.*')) {
+            alert('Please upload an image file (JPG, PNG, WEBP)');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size should be less than 10MB');
+            return;
+        }
+
+        // Update file input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImage.src = e.target.result;
+            uploadContent.classList.add('hidden');
+            preview.classList.remove('hidden');
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    window.clearPreview = function() {
+        fileInput.value = '';
+        uploadContent.classList.remove('hidden');
+        preview.classList.add('hidden');
+        previewImage.src = '';
+        fileName.textContent = '';
+        fileSize.textContent = '';
+    };
+
+    window.clearForm = function() {
+        brandField.value = '';
+        modelField.value = '';
+        yearField.value = '';
+        autoFillCheckbox.checked = true;
+        clearPreview();
+    };
+});
+</script>
+{% endblock %}

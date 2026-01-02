@@ -16,6 +16,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import *
 from .forms import *
+from django.db.models import Q
 from django.contrib import messages
 import json
 
@@ -614,6 +615,19 @@ class DeletePictureView(LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         car_id = self.kwargs.get('car_id')
         return reverse_lazy('dreamcar-detail', kwargs={'pk': car_id})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        car_id = self.kwargs.get('car_id')
+        car = get_object_or_404(DreamCar, pk=car_id, user=self.request.user)
+
+        context['car'] = car
+        context['car_id'] = car_id
+        context['total_pictures'] = car.pictures.count()
+        context['remaining_pictures'] = context['total_pictures'] - 1
+        context['other_pictures'] = car.pictures.exclude(pk=self.object.pk)
+
+        return context
 
     def delete(self, request, *args, **kwargs):
         # Remove the picture from the car's ManyToMany relationship

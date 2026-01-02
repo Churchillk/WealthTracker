@@ -1,0 +1,301 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit {{ object.brand }} {{ object.model }}{% else %}Add Dream Car{% endif %}{% endblock %}
+{% block header_title %}{% if object %}Edit Dream Car{% else %}Add New Dream Car{% endif %}{% endblock %}
+{% block header_subtitle %}{% if object %}Update your automotive dream{% else %}Start building your dream collection{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{% if object %}{% url 'dreamcar-detail' object.pk %}{% else %}{% url 'dreamcar-list' %}{% endif %}"
+           class="inline-flex items-center text-emerald-400 hover:text-emerald-300">
+            <i class="fas fa-arrow-left mr-2"></i> Back
+        </a>
+    </div>
+
+    <div class="card rounded-xl p-6">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Form Errors -->
+            {% if form.errors %}
+            <div class="p-4 rounded-lg bg-rose-900/50 text-rose-300 border border-rose-800">
+                <p class="font-semibold mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Please correct the errors below:</p>
+                <ul class="list-disc list-inside text-sm">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Main Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Brand -->
+                <div>
+                    <label for="{{ form.brand.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                        Brand *
+                    </label>
+                    {{ form.brand }}
+                    {% if form.brand.help_text %}
+                    <p class="mt-1 text-xs text-slate-400">{{ form.brand.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Model -->
+                <div>
+                    <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                        Model *
+                    </label>
+                    {{ form.model }}
+                    {% if form.model.help_text %}
+                    <p class="mt-1 text-xs text-slate-400">{{ form.model.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Year -->
+                <div>
+                    <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                        Year *
+                    </label>
+                    {{ form.year }}
+                    {% if form.year.help_text %}
+                    <p class="mt-1 text-xs text-slate-400">{{ form.year.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Horsepower -->
+                <div>
+                    <label for="{{ form.horsepower.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                        Horsepower (HP)
+                    </label>
+                    {{ form.horsepower }}
+                    {% if form.horsepower.help_text %}
+                    <p class="mt-1 text-xs text-slate-400">{{ form.horsepower.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Price -->
+                <div>
+                    <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                        Price ($) *
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
+                        {{ form.price }}
+                    </div>
+                    {% if form.price.help_text %}
+                    <p class="mt-1 text-xs text-slate-400">{{ form.price.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Status (Only show when editing) -->
+                {% if object %}
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        Status
+                    </label>
+                    <div class="flex items-center space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox"
+                                   name="bought"
+                                   {% if object.bought %}checked{% endif %}
+                                   class="w-5 h-5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 focus:ring-2">
+                            <span class="ml-2 text-slate-300">Mark as Bought</span>
+                        </label>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">Check this box if you already own this car</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                    Description
+                </label>
+                {{ form.description }}
+                {% if form.description.help_text %}
+                <p class="mt-1 text-xs text-slate-400">{{ form.description.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Add Picture Section (Only for new cars) -->
+            {% if not object %}
+            <div class="pt-6 border-t border-slate-700">
+                <h3 class="text-lg font-semibold mb-4 text-emerald-400">
+                    <i class="fas fa-camera mr-2"></i> Add First Picture (Optional)
+                </h3>
+                <p class="text-sm text-slate-400 mb-4">You can add more pictures later from the car's detail page</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Picture Brand -->
+                    <div>
+                        <label for="{{ picture_form.brand.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                            Picture Brand
+                        </label>
+                        {{ picture_form.brand }}
+                    </div>
+
+                    <!-- Picture Model -->
+                    <div>
+                        <label for="{{ picture_form.model.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                            Picture Model
+                        </label>
+                        {{ picture_form.model }}
+                    </div>
+
+                    <!-- Picture Year -->
+                    <div>
+                        <label for="{{ picture_form.year.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                            Picture Year
+                        </label>
+                        {{ picture_form.year }}
+                    </div>
+
+                    <!-- Picture Upload -->
+                    <div>
+                        <label for="{{ picture_form.picture.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                            Upload Picture
+                        </label>
+                        <div class="relative">
+                            {{ picture_form.picture }}
+                            <div class="mt-2 p-4 bg-slate-800/50 rounded-lg border border-slate-700 border-dashed">
+                                <div class="text-center">
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-2"></i>
+                                    <p class="text-sm text-slate-400">Drag & drop or click to upload</p>
+                                    <p class="text-xs text-slate-500 mt-1">JPG, PNG, WEBP up to 10MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-6 border-t border-slate-700">
+                <div>
+                    {% if object %}
+                    <a href="{% url 'dreamcar-detail' object.pk %}"
+                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors">
+                        Cancel
+                    </a>
+                    {% else %}
+                    <a href="{% url 'dreamcar-list' %}"
+                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors">
+                        Cancel
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    {% if object %}
+                    <a href="{% url 'dreamcar-delete' object.pk %}"
+                       class="px-6 py-3 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 hover:text-rose-300 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-trash mr-2"></i> Delete
+                    </a>
+                    {% endif %}
+
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save mr-2"></i>
+                        {% if object %}Update Car{% else %}Add Dream Car{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tips Section -->
+    <div class="mt-8 p-6 bg-gradient-to-r from-slate-800/50 to-emerald-900/20 rounded-xl border border-slate-700">
+        <h3 class="text-lg font-semibold mb-3 text-emerald-400">
+            <i class="fas fa-lightbulb mr-2"></i> Tips for Adding Dream Cars
+        </h3>
+        <ul class="space-y-2 text-sm text-slate-300">
+            <li class="flex items-start">
+                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                <span>Be specific with the model name for better tracking</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                <span>Include the target price you're willing to pay</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                <span>Add pictures to visualize your dream car</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
+                <span>Use the description for notes, features, or why you want this car</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload preview
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.querySelector('.fa-cloud-upload-alt').parentElement;
+                preview.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-image text-3xl text-emerald-400 mb-2"></i>
+                        <p class="text-sm text-emerald-400">${file.name}</p>
+                        <p class="text-xs text-slate-400 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // Add currency formatting to price field
+    const priceField = document.getElementById('id_price');
+    if (priceField) {
+        priceField.addEventListener('blur', function() {
+            const value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                this.value = value.toFixed(2);
+            }
+        });
+    }
+
+    // Auto-fill picture form from car form when creating new
+    if (!{{ object|yesno:"true,false" }}) {
+        const carBrand = document.getElementById('id_brand');
+        const carModel = document.getElementById('id_model');
+        const carYear = document.getElementById('id_year');
+        const picBrand = document.getElementById('id_brand');
+        const picModel = document.getElementById('id_model');
+        const picYear = document.getElementById('id_year');
+
+        if (carBrand && picBrand) {
+            carBrand.addEventListener('change', function() {
+                picBrand.value = this.value;
+            });
+        }
+
+        if (carModel && picModel) {
+            carModel.addEventListener('change', function() {
+                picModel.value = this.value;
+            });
+        }
+
+        if (carYear && picYear) {
+            carYear.addEventListener('change', function() {
+                picYear.value = this.value;
+            });
+        }
+    }
+});
+</script>
+{% endblock %}
