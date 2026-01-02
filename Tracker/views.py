@@ -3,6 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
+from django.db.models.functions import TruncDate
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
@@ -15,6 +16,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import *
 from .forms import *
+from django.contrib import messages
 import json
 
 # Dashboard View
@@ -44,10 +46,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         # Chart data - Last 30 days income
         thirty_days_ago = timezone.now() - timedelta(days=30)
-        daily_income = Income.objects.filter(
-            user=user,
-            date__gte=thirty_days_ago
-        ).extra({'day': "date(date)"}).values('day').annotate(total=Sum('amount')).order_by('day')
+        daily_income = (
+            Income.objects
+            .filter(user=user, date__gte=thirty_days_ago)
+            .annotate(day=TruncDate('date'))
+            .values('day')
+            .annotate(total=Sum('amount'))
+            .order_by('day')
+        )
 
         income_labels = [item['day'].strftime('%Y-%m-%d') for item in daily_income]
         income_data = [item['total'] for item in daily_income]
@@ -120,6 +126,12 @@ class IncomeListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Income.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        total_income = Income.objects.filter(user=self.request.user).aggregate(Sum('amount'))['amount__sum'] or 0
+        context = super().get_context_data(**kwargs)
+        context['total_income'] = total_income
+        return context
 
 class IncomeCreateView(LoginRequiredMixin, CreateView):
     model = Income
@@ -445,3 +457,170 @@ class MarkEventAttendedView(LoginRequiredMixin, View):
             return JsonResponse({'success': True})
         except Event.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Event not found'})
+
+class DreamCarListView(LoginRequiredMixin, ListView):
+    model = DreamCar
+    template_name = 'dreamcar/dreamcar_list.html'
+    context_object_name = 'cars'
+    paginate_by = 12
+
+    def get_queryset(self):
+        queryset = DreamCar.objects.filter(user=self.request.user).order_by('-date_added')
+
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status == 'bought':
+            queryset = queryset.filter(bought=True)
+        elif status == 'not_bought':
+            queryset = queryset.filter(bought=False)
+
+        # Search functionality
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(brand__icontains=search_query) |
+                Q(model__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get the first picture for each car
+        cars_with_first_picture = []
+        for car in context['cars']:
+            first_picture = car.pictures.first()  # Get first picture from ManyToMany
+            cars_with_first_picture.append({
+                'car': car,
+                'first_picture': first_picture
+            })
+
+        context['cars_with_images'] = cars_with_first_picture
+        context['total_cars'] = self.get_queryset().count()
+        context['bought_cars'] = self.get_queryset().filter(bought=True).count()
+        context['dream_cars'] = self.get_queryset().filter(bought=False).count()
+
+        # Calculate total value
+        total_value = sum(car.price for car in self.get_queryset().filter(bought=True))
+        context['total_value'] = total_value
+
+        return context
+
+class DreamCarCreateView(LoginRequiredMixin, CreateView):
+    model = DreamCar
+    form_class = DreamCarForm
+    template_name = 'dreamcar/dreamcar_form.html'
+    success_url = reverse_lazy('dreamcar-list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, 'Dream car added successfully!')
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['picture_form'] = PictureForm()
+        return context
+
+class DreamCarUpdateView(LoginRequiredMixin, UpdateView):
+    model = DreamCar
+    form_class = DreamCarForm
+    template_name = 'dreamcar/dreamcar_form.html'
+    success_url = reverse_lazy('dreamcar-list')
+
+    def get_queryset(self):
+        return DreamCar.objects.filter(user=self.request.user)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Dream car updated successfully!')
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['picture_form'] = PictureForm()
+        return context
+
+class DreamCarDeleteView(LoginRequiredMixin, DeleteView):
+    model = DreamCar
+    template_name = 'dreamcar/dreamcar_confirm_delete.html'
+    success_url = reverse_lazy('dreamcar-list')
+
+    def get_queryset(self):
+        return DreamCar.objects.filter(user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Dream car deleted successfully!')
+        return super().delete(request, *args, **kwargs)
+
+class DreamCarDetailView(LoginRequiredMixin, DetailView):
+    model = DreamCar
+    template_name = 'dreamcar/dreamcar_detail.html'
+    context_object_name = 'car'
+
+    def get_queryset(self):
+        return DreamCar.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        car = self.get_object()
+
+        # Get all pictures for this car
+        context['pictures'] = car.pictures.all()
+
+        # Get statistics
+        context['total_cars'] = DreamCar.objects.filter(user=self.request.user).count()
+        context['bought_cars'] = DreamCar.objects.filter(user=self.request.user, bought=True).count()
+
+        # Calculate similar cars (same brand or similar price range)
+        similar_cars = DreamCar.objects.filter(
+            user=self.request.user
+        ).exclude(
+            pk=car.pk
+        ).filter(
+            Q(brand=car.brand) | Q(price__range=(car.price * 0.8, car.price * 1.2))
+        )[:4]
+
+        context['similar_cars'] = similar_cars
+
+        return context
+
+class AddPictureView(LoginRequiredMixin, CreateView):
+    model = Pictures
+    form_class = PictureForm
+    template_name = 'dreamcar/add_picture.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        # Get the car and add the picture to it
+        car_id = self.kwargs.get('car_id')
+        car = get_object_or_404(DreamCar, pk=car_id, user=self.request.user)
+        car.pictures.add(self.object)
+
+        messages.success(self.request, 'Picture added successfully!')
+        return response
+
+    def get_success_url(self):
+        return reverse_lazy('dreamcar-detail', kwargs={'pk': self.kwargs.get('car_id')})
+
+class DeletePictureView(LoginRequiredMixin, DeleteView):
+    model = Pictures
+    template_name = 'dreamcar/delete_picture.html'
+
+    def get_success_url(self):
+        car_id = self.kwargs.get('car_id')
+        return reverse_lazy('dreamcar-detail', kwargs={'pk': car_id})
+
+    def delete(self, request, *args, **kwargs):
+        # Remove the picture from the car's ManyToMany relationship
+        car_id = self.kwargs.get('car_id')
+        car = get_object_or_404(DreamCar, pk=car_id, user=self.request.user)
+        picture = self.get_object()
+        car.pictures.remove(picture)
+
+        messages.success(request, 'Picture removed successfully!')
+        return super().delete(request, *args, **kwargs)

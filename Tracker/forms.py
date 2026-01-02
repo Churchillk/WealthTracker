@@ -78,3 +78,53 @@ class EventForm(forms.ModelForm):
             'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'location': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
         }
+
+class DreamCarForm(forms.ModelForm):
+    class Meta:
+        model = DreamCar
+        fields = ['brand', 'model', 'horsepower', 'year', 'price', 'description']
+        widgets = {
+            'brand': forms.TextInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+            'model': forms.TextInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+            'horsepower': forms.NumberInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+            'year': forms.NumberInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+            'price': forms.NumberInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500',
+                'step': '0.01'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500',
+                'rows': 4
+            }),
+        }
+        labels = {
+            'horsepower': 'Horsepower (HP)',
+            'price': 'Price ($)',
+        }
+
+class PictureForm(forms.ModelForm):
+    class Meta:
+        model = Pictures
+        fields = ['brand', 'model', 'year', 'picture']
+        widgets = {
+            'brand': forms.TextInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+            'model': forms.TextInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+            'year': forms.NumberInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+            'picture': forms.FileInput(attrs={
+                'class': 'bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500'
+            }),
+        }

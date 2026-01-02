@@ -49,4 +49,13 @@ urlpatterns = [
     path('events/new/', views.EventCreateView.as_view(), name='event-create'),
     path('events/<int:pk>/edit/', views.EventUpdateView.as_view(), name='event-update'),
     path('events/<int:pk>/delete/', views.EventDeleteView.as_view(), name='event-delete'),
+
+    # DreamCar URLs
+    path('dreamcars/', views.DreamCarListView.as_view(), name='dreamcar-list'),
+    path('dreamcars/new/', views.DreamCarCreateView.as_view(), name='dreamcar-create'),
+    path('dreamcars/<int:pk>/', views.DreamCarDetailView.as_view(), name='dreamcar-detail'),
+    path('dreamcars/<int:pk>/edit/', views.DreamCarUpdateView.as_view(), name='dreamcar-update'),
+    path('dreamcars/<int:pk>/delete/', views.DreamCarDeleteView.as_view(), name='dreamcar-delete'),
+    path('dreamcars/<int:car_id>/add-picture/', views.AddPictureView.as_view(), name='dreamcar-add-picture'),
+    path('dreamcars/<int:car_id>/pictures/<int:pk>/delete/', views.DeletePictureView.as_view(), name='dreamcar-delete-picture'),
 ]

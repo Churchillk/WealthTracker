@@ -1,0 +1,294 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}{{ car.brand }} {{ car.model }} - Details{% endblock %}
+{% block header_title %}{{ car.brand }} {{ car.model }}{% endblock %}
+{% block header_subtitle %}Dream Car Details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="{% url 'dreamcar-list' %}" class="inline-flex items-center text-emerald-400 hover:text-emerald-300">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Collection
+        </a>
+    </div>
+
+    <!-- Main Car Card -->
+    <div class="card rounded-xl p-6">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Left Column - Car Images -->
+            <div class="lg:w-1/2">
+                <!-- Main Image -->
+                <div class="mb-4">
+                    <div class="relative h-96 rounded-xl overflow-hidden bg-slate-900">
+                        {% if pictures.first %}
+                        <img id="main-image" src="{{ pictures.first.picture.url }}"
+                             alt="{{ car.brand }} {{ car.model }}"
+                             class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                            <i class="fas fa-car text-6xl text-slate-600"></i>
+                        </div>
+                        {% endif %}
+
+                        <!-- Status Overlay -->
+                        <div class="absolute top-4 right-4">
+                            {% if car.bought %}
+                            <span class="px-4 py-2 bg-emerald-900/80 text-emerald-300 rounded-full text-sm font-medium backdrop-blur-sm">
+                                <i class="fas fa-check mr-2"></i> OWNED
+                            </span>
+                            {% else %}
+                            <span class="px-4 py-2 bg-amber-900/80 text-amber-300 rounded-full text-sm font-medium backdrop-blur-sm">
+                                <i class="fas fa-star mr-2"></i> DREAM CAR
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thumbnail Images -->
+                {% if pictures|length > 1 %}
+                <div class="grid grid-cols-4 gap-2">
+                    {% for picture in pictures %}
+                    <div class="relative h-24 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                         onclick="changeMainImage('{{ picture.picture.url }}')">
+                        <img src="{{ picture.picture.url }}"
+                             alt="{{ picture.brand }} {{ picture.model }}"
+                             class="w-full h-full object-cover">
+                        {% if forloop.first %}
+                        <div class="absolute inset-0 border-2 border-emerald-400 rounded-lg"></div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Add Picture Button -->
+                <div class="mt-4">
+                    <a href="{% url 'dreamcar-add-picture' car.pk %}" class="btn-primary inline-block w-full text-center">
+                        <i class="fas fa-camera mr-2"></i> Add More Pictures
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Column - Car Details -->
+            <div class="lg:w-1/2">
+                <!-- Car Header -->
+                <div class="flex items-start justify-between mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold">{{ car.brand }} {{ car.model }}</h1>
+                        <p class="text-xl text-slate-400">{{ car.year }}</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-4xl font-bold gold-text mb-2">${{ car.price|floatformat:2 }}</div>
+                        {% if car.bought and car.date_bought %}
+                        <p class="text-sm text-slate-400">Bought on {{ car.date_bought|date:"M d, Y" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Specifications -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-slate-800/50 rounded-lg p-4">
+                        <p class="text-slate-400 text-sm mb-1">Horsepower</p>
+                        <p class="text-2xl font-bold text-emerald-400">{{ car.horsepower }} HP</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-4">
+                        <p class="text-slate-400 text-sm mb-1">Status</p>
+                        <p class="text-2xl font-bold {% if car.bought %}text-emerald-400{% else %}text-amber-400{% endif %}">
+                            {% if car.bought %}Owned{% else %}Dream{% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-4">
+                        <p class="text-slate-400 text-sm mb-1">Date Added</p>
+                        <p class="text-lg font-medium">{{ car.date_added|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-4">
+                        <p class="text-slate-400 text-sm mb-1">Pictures</p>
+                        <p class="text-lg font-medium">{{ pictures|length }}</p>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Description</h3>
+                    <div class="bg-slate-800/30 rounded-lg p-4">
+                        <p class="text-slate-300 whitespace-pre-line">{{ car.description|default:"No description provided." }}</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3">
+                    {% if not car.bought %}
+                    <button onclick="markAsBought({{ car.pk }})" class="btn-primary">
+                        <i class="fas fa-check mr-2"></i> Mark as Bought
+                    </button>
+                    {% else %}
+                    <button onclick="markAsDream({{ car.pk }})" class="btn-primary bg-amber-600 hover:bg-amber-700">
+                        <i class="fas fa-star mr-2"></i> Mark as Dream
+                    </button>
+                    {% endif %}
+
+                    <a href="{% url 'dreamcar-update' car.pk %}" class="px-6 py-3 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 hover:text-blue-300 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-edit mr-2"></i> Edit
+                    </a>
+
+                    <a href="{% url 'dreamcar-delete' car.pk %}" class="px-6 py-3 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 hover:text-rose-300 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-trash mr-2"></i> Delete
+                    </a>
+                </div>
+
+                <!-- Picture Management -->
+                {% if pictures %}
+                <div class="mt-8">
+                    <h3 class="text-lg font-semibold mb-3">Manage Pictures</h3>
+                    <div class="space-y-2">
+                        {% for picture in pictures %}
+                        <div class="flex items-center justify-between bg-slate-800/30 rounded-lg p-3">
+                            <div class="flex items-center">
+                                <img src="{{ picture.picture.url }}"
+                                     alt="Thumbnail"
+                                     class="w-12 h-12 object-cover rounded mr-3">
+                                <div>
+                                    <p class="font-medium">{{ picture.brand }} {{ picture.model }}</p>
+                                    <p class="text-sm text-slate-400">{{ picture.year }}</p>
+                                </div>
+                            </div>
+                            <a href="{% url 'dreamcar-delete-picture' car.pk picture.pk %}"
+                               class="px-3 py-1 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 hover:text-rose-300 rounded text-sm">
+                                Remove
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Similar Cars -->
+    {% if similar_cars %}
+    <div class="card rounded-xl p-6">
+        <h3 class="text-lg font-semibold mb-4">Similar Cars in Your Collection</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for similar in similar_cars %}
+            <a href="{% url 'dreamcar-detail' similar.pk %}"
+               class="bg-slate-800/50 hover:bg-slate-800 rounded-lg p-4 border border-slate-700 hover:border-emerald-500 transition-colors">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-bold">{{ similar.brand }}</h4>
+                    <span class="text-sm text-slate-400">{{ similar.year }}</span>
+                </div>
+                <p class="text-slate-400 text-sm mb-2">{{ similar.model }}</p>
+                <div class="flex items-center justify-between">
+                    <span class="text-emerald-400 font-bold">${{ similar.price|floatformat:2 }}</span>
+                    <span class="text-sm {% if similar.bought %}text-emerald-400{% else %}text-amber-400{% endif %}">
+                        {% if similar.bought %}Owned{% else %}Dream{% endif %}
+                    </span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-car text-emerald-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Total Cars in Collection</p>
+                    <h3 class="text-2xl font-bold text-emerald-400">{{ total_cars }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-check-circle text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Cars You Own</p>
+                    <h3 class="text-2xl font-bold text-blue-400">{{ bought_cars }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card card p-6 rounded-xl">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-violet-900/50 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-images text-violet-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-sm">Total Pictures</p>
+                    <h3 class="text-2xl font-bold text-violet-400">{{ pictures|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changeMainImage(imageUrl) {
+    document.getElementById('main-image').src = imageUrl;
+}
+
+function markAsBought(carId) {
+    if (confirm('Mark this car as bought?')) {
+        fetch(`/api/dreamcars/${carId}/mark-bought/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function markAsDream(carId) {
+    if (confirm('Mark this car as a dream (not bought)?')) {
+        fetch(`/api/dreamcars/${carId}/mark-dream/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
