@@ -6,233 +6,550 @@
 {% block header_subtitle %}{% if object %}Update your automotive dream{% else %}Start building your dream collection{% endif %}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <!-- Back Button -->
-    <div class="mb-6">
+<div class="max-w-6xl mx-auto">
+    <!-- Back Button & Progress Steps -->
+    <div class="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <a href="{% if object %}{% url 'dreamcar-detail' object.pk %}{% else %}{% url 'dreamcar-list' %}{% endif %}"
-           class="inline-flex items-center text-emerald-400 hover:text-emerald-300">
+           class="inline-flex items-center text-emerald-400 hover:text-emerald-300 px-4 py-2 bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-colors">
             <i class="fas fa-arrow-left mr-2"></i> Back
         </a>
+
+        <!-- Progress Steps (for new cars) -->
+        {% if not object %}
+        <div class="flex items-center space-x-2">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
+                    <span class="text-sm font-bold">1</span>
+                </div>
+                <div class="text-sm font-medium text-emerald-400 ml-2">Basic Info</div>
+            </div>
+            <div class="w-8 h-px bg-slate-600"></div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+                    <span class="text-sm font-bold text-slate-400">2</span>
+                </div>
+                <div class="text-sm font-medium text-slate-400 ml-2">Details</div>
+            </div>
+            <div class="w-8 h-px bg-slate-600"></div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+                    <span class="text-sm font-bold text-slate-400">3</span>
+                </div>
+                <div class="text-sm font-medium text-slate-400 ml-2">Pictures</div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
-    <div class="card rounded-xl p-6">
-        <form method="post" enctype="multipart/form-data" class="space-y-6">
-            {% csrf_token %}
-
-            <!-- Form Errors -->
-            {% if form.errors %}
-            <div class="p-4 rounded-lg bg-rose-900/50 text-rose-300 border border-rose-800">
-                <p class="font-semibold mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Please correct the errors below:</p>
-                <ul class="list-disc list-inside text-sm">
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                        <li>{{ field.label }}: {{ error }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <!-- Main Details -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Brand -->
-                <div>
-                    <label for="{{ form.brand.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                        Brand *
-                    </label>
-                    {{ form.brand }}
-                    {% if form.brand.help_text %}
-                    <p class="mt-1 text-xs text-slate-400">{{ form.brand.help_text }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Model -->
-                <div>
-                    <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                        Model *
-                    </label>
-                    {{ form.model }}
-                    {% if form.model.help_text %}
-                    <p class="mt-1 text-xs text-slate-400">{{ form.model.help_text }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Year -->
-                <div>
-                    <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                        Year *
-                    </label>
-                    {{ form.year }}
-                    {% if form.year.help_text %}
-                    <p class="mt-1 text-xs text-slate-400">{{ form.year.help_text }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Horsepower -->
-                <div>
-                    <label for="{{ form.horsepower.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                        Horsepower (HP)
-                    </label>
-                    {{ form.horsepower }}
-                    {% if form.horsepower.help_text %}
-                    <p class="mt-1 text-xs text-slate-400">{{ form.horsepower.help_text }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Price -->
-                <div>
-                    <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                        Price ($) *
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
-                        {{ form.price }}
-                    </div>
-                    {% if form.price.help_text %}
-                    <p class="mt-1 text-xs text-slate-400">{{ form.price.help_text }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Status (Only show when editing) -->
-                {% if object %}
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">
-                        Status
-                    </label>
-                    <div class="flex items-center space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="checkbox"
-                                   name="bought"
-                                   {% if object.bought %}checked{% endif %}
-                                   class="w-5 h-5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 focus:ring-2">
-                            <span class="ml-2 text-slate-300">Mark as Bought</span>
-                        </label>
-                    </div>
-                    <p class="mt-1 text-xs text-slate-400">Check this box if you already own this car</p>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Description -->
-            <div>
-                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                    Description
-                </label>
-                {{ form.description }}
-                {% if form.description.help_text %}
-                <p class="mt-1 text-xs text-slate-400">{{ form.description.help_text }}</p>
-                {% endif %}
-            </div>
-
-            <!-- Add Picture Section (Only for new cars) -->
-            {% if not object %}
-            <div class="pt-6 border-t border-slate-700">
-                <h3 class="text-lg font-semibold mb-4 text-emerald-400">
-                    <i class="fas fa-camera mr-2"></i> Add First Picture (Optional)
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column - Quick Stats & Tips -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Quick Stats Card -->
+            <div class="card rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                    <i class="fas fa-chart-line text-emerald-400 mr-2"></i>
+                    Collection Stats
                 </h3>
-                <p class="text-sm text-slate-400 mb-4">You can add more pictures later from the car's detail page</p>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Total Cars</span>
+                        <span class="text-lg font-bold text-emerald-400">{{ total_cars|default:"0" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Cars Owned</span>
+                        <span class="text-lg font-bold text-blue-400">{{ bought_cars|default:"0" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Dream Cars</span>
+                        <span class="text-lg font-bold text-amber-400">{{ dream_cars|default:"0" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Total Value</span>
+                        <span class="text-lg font-bold text-violet-400">${{ total_value|floatformat:2|default:"0" }}</span>
+                    </div>
+                </div>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Picture Brand -->
-                    <div>
-                        <label for="{{ picture_form.brand.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                            Picture Brand
-                        </label>
-                        {{ picture_form.brand }}
+            <!-- Quick Actions Card -->
+            <div class="card rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                    <i class="fas fa-bolt text-amber-400 mr-2"></i>
+                    Quick Actions
+                </h3>
+                <div class="space-y-3">
+                    <a href="{% url 'dreamcar-list' %}"
+                       class="flex items-center justify-between p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-colors">
+                        <span class="text-slate-300">View All Cars</span>
+                        <i class="fas fa-chevron-right text-slate-500"></i>
+                    </a>
+                    <a href="{% if object %}{% url 'dreamcar-add-picture' object.pk %}{% else %}#{% endif %}"
+                       class="flex items-center justify-between p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-colors {% if not object %}opacity-50 cursor-not-allowed{% endif %}">
+                        <span class="text-slate-300">Add Pictures</span>
+                        <i class="fas fa-camera text-slate-500"></i>
+                    </a>
+                    <button onclick="previewCar()"
+                            class="w-full flex items-center justify-between p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-colors">
+                        <span class="text-slate-300">Preview Card</span>
+                        <i class="fas fa-eye text-slate-500"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Popular Brands Card -->
+            <div class="card rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                    <i class="fas fa-star text-amber-400 mr-2"></i>
+                    Popular Brands
+                </h3>
+                <div class="space-y-2">
+                    {% for brand in popular_brands %}
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded cursor-pointer" onclick="setBrand('{{ brand }}')">
+                        <span class="text-slate-300">{{ brand }}</span>
+                        <span class="text-xs text-slate-500">{{ brand.count }} cars</span>
+                    </div>
+                    {% empty %}
+                    <div class="flex items-center space-x-2 p-2">
+                        <div class="w-4 h-4 rounded bg-slate-700"></div>
+                        <div class="w-24 h-4 rounded bg-slate-700"></div>
+                    </div>
+                    <div class="flex items-center space-x-2 p-2">
+                        <div class="w-4 h-4 rounded bg-slate-700"></div>
+                        <div class="w-32 h-4 rounded bg-slate-700"></div>
+                    </div>
+                    <div class="flex items-center space-x-2 p-2">
+                        <div class="w-4 h-4 rounded bg-slate-700"></div>
+                        <div class="w-28 h-4 rounded bg-slate-700"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Main Form -->
+        <div class="lg:col-span-2">
+            <!-- Form Header with Visual Indicator -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-2xl font-bold">Car Details</h2>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm px-3 py-1 rounded-full {% if object %}bg-blue-900/30 text-blue-400{% else %}bg-emerald-900/30 text-emerald-400{% endif %}">
+                            <i class="fas {% if object %}fa-edit{% else %}fa-plus{% endif %} mr-1"></i>
+                            {% if object %}Editing{% else %}Creating New{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <p class="text-slate-400">Fill in the details of your dream car. All fields marked with * are required.</p>
+            </div>
+
+            <div class="card rounded-xl p-6">
+                <form method="post" enctype="multipart/form-data" class="space-y-8">
+                    {% csrf_token %}
+
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="p-4 rounded-lg bg-rose-900/50 text-rose-300 border border-rose-800 animate-pulse">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <p class="font-semibold">Please correct the errors below:</p>
+                        </div>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li><span class="text-rose-400">{{ field.label }}:</span> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Basic Information Section -->
+                    <div class="space-y-6">
+                        <div class="flex items-center mb-4">
+                            <div class="w-8 h-8 rounded-full bg-emerald-900/30 flex items-center justify-center mr-3">
+                                <i class="fas fa-car text-emerald-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold">Basic Information</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Brand with suggestions -->
+                            <div class="relative">
+                                <label for="{{ form.brand.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Brand *
+                                    <span class="text-xs text-slate-500 ml-1">(e.g., Tesla, BMW, Mercedes)</span>
+                                </label>
+                                <div class="relative">
+                                    {{ form.brand }}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-building text-slate-500"></i>
+                                    </div>
+                                </div>
+                                <div id="brand-suggestions" class="absolute z-10 w-full mt-1 bg-slate-800 rounded-lg border border-slate-700 hidden max-h-48 overflow-y-auto"></div>
+                            </div>
+
+                            <!-- Model with suggestions -->
+                            <div class="relative">
+                                <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Model *
+                                    <span class="text-xs text-slate-500 ml-1">(e.g., Model S, M3, S-Class)</span>
+                                </label>
+                                <div class="relative">
+                                    {{ form.model }}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-cogs text-slate-500"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Year with range slider -->
+                            <div>
+                                <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Year *
+                                    <span class="text-xs text-slate-500 ml-1">Manufacturing year</span>
+                                </label>
+                                <div class="relative">
+                                    {{ form.year }}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-calendar text-slate-500"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="range" min="1900" max="2024" value="{% if object.year %}{{ object.year }}{% else %}2024{% endif %}"
+                                           class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                                           oninput="document.getElementById('id_year').value = this.value">
+                                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>1900</span>
+                                        <span>2024</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Horsepower -->
+                            <div>
+                                <label for="{{ form.horsepower.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Horsepower (HP)
+                                    <span class="text-xs text-slate-500 ml-1">Engine power</span>
+                                </label>
+                                <div class="relative">
+                                    {{ form.horsepower }}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-bolt text-slate-500"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Price with calculator -->
+                            <div>
+                                <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Price ($) *
+                                    <span class="text-xs text-slate-500 ml-1">Target purchase price</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
+                                    {{ form.price }}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-2">
+                                        <button type="button" onclick="calculateMonthlyPayment()" class="text-xs text-slate-400 hover:text-emerald-400">
+                                            <i class="fas fa-calculator"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Monthly Payment Calculator -->
+                                <div id="payment-calculator" class="mt-3 p-3 bg-slate-800/30 rounded-lg hidden">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm text-slate-400">Monthly Payment (5yr @ 5%):</span>
+                                        <span class="font-bold text-emerald-400" id="monthly-payment">$0.00</span>
+                                    </div>
+                                    <div class="text-xs text-slate-500">Based on 20% down payment</div>
+                                </div>
+                            </div>
+
+                            <!-- Status Toggle -->
+                            {% if object %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">
+                                    Ownership Status
+                                    <span class="text-xs text-slate-500 ml-1">Have you bought this car?</span>
+                                </label>
+                                <div class="flex items-center space-x-4">
+                                    <div class="relative">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox"
+                                                   name="bought"
+                                                   id="bought-toggle"
+                                                   {% if object.bought %}checked{% endif %}
+                                                   class="sr-only peer">
+                                            <div class="w-14 h-7 bg-slate-700 peer-focus:ring-4 peer-focus:ring-emerald-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
+                                            <span class="ml-3 text-slate-300" id="status-text">
+                                                {% if object.bought %}Owned{% else %}Dream{% endif %}
+                                            </span>
+                                        </label>
+                                    </div>
+                                    {% if object.bought %}
+                                    <div class="text-sm text-emerald-400">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Bought on {{ object.date_bought|date:"M d, Y" }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <!-- Picture Model -->
-                    <div>
-                        <label for="{{ picture_form.model.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                            Picture Model
-                        </label>
-                        {{ picture_form.model }}
-                    </div>
+                    <!-- Description Section -->
+                    <div class="pt-6 border-t border-slate-700">
+                        <div class="flex items-center mb-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center mr-3">
+                                <i class="fas fa-file-alt text-blue-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold">Description & Notes</h3>
+                        </div>
 
-                    <!-- Picture Year -->
-                    <div>
-                        <label for="{{ picture_form.year.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                            Picture Year
-                        </label>
-                        {{ picture_form.year }}
-                    </div>
-
-                    <!-- Picture Upload -->
-                    <div>
-                        <label for="{{ picture_form.picture.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
-                            Upload Picture
-                        </label>
                         <div class="relative">
-                            {{ picture_form.picture }}
-                            <div class="mt-2 p-4 bg-slate-800/50 rounded-lg border border-slate-700 border-dashed">
-                                <div class="text-center">
-                                    <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-2"></i>
-                                    <p class="text-sm text-slate-400">Drag & drop or click to upload</p>
-                                    <p class="text-xs text-slate-500 mt-1">JPG, PNG, WEBP up to 10MB</p>
+                            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                Why This Car?
+                                <span class="text-xs text-slate-500 ml-1">Features, reasons, or special notes</span>
+                            </label>
+                            {{ form.description }}
+                            <div class="absolute bottom-3 right-3 flex items-center space-x-2">
+                                <button type="button" onclick="formatText('bold')" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white">
+                                    <i class="fas fa-bold text-xs"></i>
+                                </button>
+                                <button type="button" onclick="formatText('italic')" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white">
+                                    <i class="fas fa-italic text-xs"></i>
+                                </button>
+                                <span class="text-xs text-slate-500" id="char-count">0/1000</span>
+                            </div>
+                        </div>
+
+                        <!-- Description Tips -->
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="p-3 bg-slate-800/30 rounded-lg">
+                                <div class="text-xs text-slate-400 mb-1">What to include:</div>
+                                <div class="text-sm text-slate-300">Features you love</div>
+                            </div>
+                            <div class="p-3 bg-slate-800/30 rounded-lg">
+                                <div class="text-xs text-slate-400 mb-1">Good to add:</div>
+                                <div class="text-sm text-slate-300">Target timeline</div>
+                            </div>
+                            <div class="p-3 bg-slate-800/30 rounded-lg">
+                                <div class="text-xs text-slate-400 mb-1">Optional:</div>
+                                <div class="text-sm text-slate-300">Color preference</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Picture Section (Only for new cars) -->
+                    {% if not object %}
+                    <div class="pt-6 border-t border-slate-700">
+                        <div class="flex items-center mb-4">
+                            <div class="w-8 h-8 rounded-full bg-amber-900/30 flex items-center justify-center mr-3">
+                                <i class="fas fa-camera text-amber-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold">Add First Picture (Optional)</h3>
+                        </div>
+
+                        <p class="text-sm text-slate-400 mb-6">You can add more pictures later from the car's detail page. Adding a picture now helps visualize your dream!</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Picture Brand -->
+                            <div>
+                                <label for="{{ picture_form.brand.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Picture Brand
+                                    <span class="text-xs text-slate-500 ml-1">Auto-filled from above</span>
+                                </label>
+                                <div class="relative">
+                                    {{ picture_form.brand }}
+                                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-sync-alt text-slate-500 cursor-pointer hover:text-emerald-400"
+                                           onclick="syncPictureDetails()"
+                                           title="Sync with car details"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Picture Model -->
+                            <div>
+                                <label for="{{ picture_form.model.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Picture Model
+                                </label>
+                                {{ picture_form.model }}
+                            </div>
+
+                            <!-- Picture Year -->
+                            <div>
+                                <label for="{{ picture_form.year.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Picture Year
+                                </label>
+                                {{ picture_form.year }}
+                            </div>
+
+                            <!-- Picture Upload with Drag & Drop -->
+                            <div class="md:col-span-2">
+                                <label for="{{ picture_form.picture.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Upload Picture
+                                    <span class="text-xs text-slate-500 ml-1">Best size: 1200x800px</span>
+                                </label>
+
+                                <div class="relative">
+                                    {{ picture_form.picture }}
+
+                                    <!-- Drag & Drop Area -->
+                                    <div id="drop-area"
+                                         class="mt-2 p-8 bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-700 hover:border-emerald-500 transition-colors cursor-pointer text-center">
+                                        <div id="upload-content">
+                                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
+                                                <i class="fas fa-cloud-upload-alt text-2xl text-slate-500"></i>
+                                            </div>
+                                            <p class="text-lg font-medium text-slate-300 mb-2">Drag & drop your picture here</p>
+                                            <p class="text-sm text-slate-400 mb-1">or click to browse</p>
+                                            <p class="text-xs text-slate-500">JPG, PNG, WEBP up to 10MB</p>
+                                        </div>
+
+                                        <!-- Preview -->
+                                        <div id="preview" class="hidden mt-6">
+                                            <div class="relative inline-block">
+                                                <img id="preview-image" class="max-h-48 rounded-lg shadow-lg">
+                                                <button type="button"
+                                                        onclick="clearPreview()"
+                                                        class="absolute -top-2 -right-2 w-8 h-8 bg-rose-600 hover:bg-rose-700 rounded-full flex items-center justify-center text-white">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            <p id="file-name" class="text-sm text-emerald-400 mt-2"></p>
+                                            <p id="file-size" class="text-xs text-slate-400"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Progress -->
+                                <div id="upload-progress" class="hidden mt-4">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm text-slate-400">Uploading...</span>
+                                        <span class="text-sm text-slate-400" id="progress-percent">0%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-700 rounded-full h-2">
+                                        <div id="progress-bar" class="bg-emerald-500 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Picture Tips -->
+                        <div class="mt-6 p-4 bg-gradient-to-r from-amber-900/10 to-emerald-900/10 rounded-lg border border-amber-800/20">
+                            <h4 class="text-sm font-semibold text-amber-400 mb-2 flex items-center">
+                                <i class="fas fa-lightbulb mr-2"></i>
+                                Picture Tips
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div class="flex items-start">
+                                    <i class="fas fa-check text-emerald-400 mt-1 mr-2 text-xs"></i>
+                                    <span class="text-sm text-slate-300">Use high-quality images</span>
+                                </div>
+                                <div class="flex items-start">
+                                    <i class="fas fa-check text-emerald-400 mt-1 mr-2 text-xs"></i>
+                                    <span class="text-sm text-slate-300">Multiple angles preferred</span>
+                                </div>
+                                <div class="flex items-start">
+                                    <i class="fas fa-check text-emerald-400 mt-1 mr-2 text-xs"></i>
+                                    <span class="text-sm text-slate-300">Natural lighting works best</span>
+                                </div>
+                                <div class="flex items-start">
+                                    <i class="fas fa-check text-emerald-400 mt-1 mr-2 text-xs"></i>
+                                    <span class="text-sm text-slate-300">Focus on the car, clean background</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                    {% endif %}
+
+                    <!-- Form Actions -->
+                    <div class="pt-8 border-t border-slate-700">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                            <div class="flex items-center space-x-3">
+                                {% if object %}
+                                <a href="{% url 'dreamcar-detail' object.pk %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </a>
+                                {% else %}
+                                <a href="{% url 'dreamcar-list' %}"
+                                   class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </a>
+                                {% endif %}
+
+                                <button type="button" onclick="clearForm()"
+                                        class="px-6 py-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-redo mr-2"></i> Clear Form
+                                </button>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <!-- Preview Button -->
+                                <button type="button" onclick="previewCar()"
+                                        class="px-6 py-3 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 hover:text-blue-300 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-eye mr-2"></i> Preview
+                                </button>
+
+                                {% if object %}
+                                <a href="{% url 'dreamcar-delete' object.pk %}"
+                                   class="px-6 py-3 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 hover:text-rose-300 rounded-lg font-medium transition-colors flex items-center">
+                                    <i class="fas fa-trash mr-2"></i> Delete
+                                </a>
+                                {% endif %}
+
+                                <button type="submit" class="btn-primary flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    {% if object %}
+                                    <span>Update Car</span>
+                                    {% else %}
+                                    <span>Add to Collection</span>
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Save Status -->
+                        <div class="mt-4 text-center">
+                            <div id="save-status" class="hidden">
+                                <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-emerald-900/30">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                                    <span class="text-sm text-emerald-400">Auto-saving...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
-            {% endif %}
+        </div>
+    </div>
 
-            <!-- Action Buttons -->
-            <div class="flex items-center justify-between pt-6 border-t border-slate-700">
-                <div>
-                    {% if object %}
-                    <a href="{% url 'dreamcar-detail' object.pk %}"
-                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors">
-                        Cancel
-                    </a>
-                    {% else %}
-                    <a href="{% url 'dreamcar-list' %}"
-                       class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium transition-colors">
-                        Cancel
-                    </a>
-                    {% endif %}
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold">Car Preview</h3>
+                    <button onclick="closePreview()" class="text-slate-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
                 </div>
 
-                <div class="flex items-center space-x-4">
-                    {% if object %}
-                    <a href="{% url 'dreamcar-delete' object.pk %}"
-                       class="px-6 py-3 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 hover:text-rose-300 rounded-lg font-medium transition-colors">
-                        <i class="fas fa-trash mr-2"></i> Delete
-                    </a>
-                    {% endif %}
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <!-- Preview Card Content -->
+                    <div id="preview-content">
+                        <!-- This will be populated by JavaScript -->
+                    </div>
+                </div>
 
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-save mr-2"></i>
-                        {% if object %}Update Car{% else %}Add Dream Car{% endif %}
+                <div class="mt-6 text-center">
+                    <button onclick="closePreview()" class="btn-primary">
+                        <i class="fas fa-check mr-2"></i> Looks Good - Continue
                     </button>
                 </div>
             </div>
-        </form>
-    </div>
-
-    <!-- Tips Section -->
-    <div class="mt-8 p-6 bg-gradient-to-r from-slate-800/50 to-emerald-900/20 rounded-xl border border-slate-700">
-        <h3 class="text-lg font-semibold mb-3 text-emerald-400">
-            <i class="fas fa-lightbulb mr-2"></i> Tips for Adding Dream Cars
-        </h3>
-        <ul class="space-y-2 text-sm text-slate-300">
-            <li class="flex items-start">
-                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
-                <span>Be specific with the model name for better tracking</span>
-            </li>
-            <li class="flex items-start">
-                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
-                <span>Include the target price you're willing to pay</span>
-            </li>
-            <li class="flex items-start">
-                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
-                <span>Add pictures to visualize your dream car</span>
-            </li>
-            <li class="flex items-start">
-                <i class="fas fa-check text-emerald-400 mt-1 mr-2"></i>
-                <span>Use the description for notes, features, or why you want this car</span>
-            </li>
-        </ul>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -240,36 +557,102 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // File upload preview
-    const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const preview = document.querySelector('.fa-cloud-upload-alt').parentElement;
-                preview.innerHTML = `
-                    <div class="text-center">
-                        <i class="fas fa-image text-3xl text-emerald-400 mb-2"></i>
-                        <p class="text-sm text-emerald-400">${file.name}</p>
-                        <p class="text-xs text-slate-400 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                    </div>
-                `;
-            }
+    // Initialize character counter for description
+    const descriptionField = document.getElementById('id_description');
+    const charCount = document.getElementById('char-count');
+
+    if (descriptionField) {
+        descriptionField.addEventListener('input', function() {
+            charCount.textContent = `${this.value.length}/1000`;
         });
+        charCount.textContent = `${descriptionField.value.length}/1000`;
     }
 
-    // Add currency formatting to price field
-    const priceField = document.getElementById('id_price');
-    if (priceField) {
-        priceField.addEventListener('blur', function() {
-            const value = parseFloat(this.value);
-            if (!isNaN(value)) {
-                this.value = value.toFixed(2);
-            }
+    // File upload with drag & drop
+    const fileInput = document.getElementById('id_picture');
+    const dropArea = document.getElementById('drop-area');
+    const uploadContent = document.getElementById('upload-content');
+    const preview = document.getElementById('preview');
+    const previewImage = document.getElementById('preview-image');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+
+    if (fileInput && dropArea) {
+        // Drag & drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
         });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('border-emerald-500', 'bg-emerald-900/10');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('border-emerald-500', 'bg-emerald-900/10');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            const file = files[0];
+            if (!file) return;
+
+            if (!file.type.match('image.*')) {
+                showNotification('Please upload an image file (JPG, PNG, WEBP)', 'error');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showNotification('File size should be less than 10MB', 'error');
+                return;
+            }
+
+            // Update file input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                uploadContent.classList.add('hidden');
+                preview.classList.remove('hidden');
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+
+                // Show upload progress simulation
+                simulateUploadProgress();
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
-    // Auto-fill picture form from car form when creating new
+    // Auto-fill picture form from car form
     if (!{{ object|yesno:"true,false" }}) {
         const carBrand = document.getElementById('id_brand');
         const carModel = document.getElementById('id_model');
@@ -279,23 +662,325 @@ document.addEventListener('DOMContentLoaded', function() {
         const picYear = document.getElementById('id_year');
 
         if (carBrand && picBrand) {
-            carBrand.addEventListener('change', function() {
-                picBrand.value = this.value;
-            });
-        }
-
-        if (carModel && picModel) {
-            carModel.addEventListener('change', function() {
-                picModel.value = this.value;
-            });
-        }
-
-        if (carYear && picYear) {
-            carYear.addEventListener('change', function() {
-                picYear.value = this.value;
+            carBrand.addEventListener('input', function() {
+                if (document.getElementById('auto-fill-pictures')?.checked) {
+                    picBrand.value = this.value;
+                }
             });
         }
     }
+
+    // Initialize popular brands
+    const popularBrands = [
+        'Tesla', 'BMW', 'Mercedes-Benz', 'Audi', 'Porsche',
+        'Ferrari', 'Lamborghini', 'Ford', 'Chevrolet', 'Toyota',
+        'Honda', 'Nissan', 'Lexus', 'Volvo', 'Jaguar'
+    ];
+
+    // Brand suggestions
+    const brandField = document.getElementById('id_brand');
+    const brandSuggestions = document.getElementById('brand-suggestions');
+
+    if (brandField && brandSuggestions) {
+        brandField.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            if (value.length > 1) {
+                const filtered = popularBrands.filter(brand =>
+                    brand.toLowerCase().includes(value)
+                );
+
+                if (filtered.length > 0) {
+                    brandSuggestions.innerHTML = filtered.map(brand => `
+                        <div class="px-4 py-2 hover:bg-slate-700 cursor-pointer" onclick="setBrand('${brand}')">
+                            ${brand}
+                        </div>
+                    `).join('');
+                    brandSuggestions.classList.remove('hidden');
+                } else {
+                    brandSuggestions.classList.add('hidden');
+                }
+            } else {
+                brandSuggestions.classList.add('hidden');
+            }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!brandField.contains(e.target) && !brandSuggestions.contains(e.target)) {
+                brandSuggestions.classList.add('hidden');
+            }
+        });
+    }
+
+    // Status toggle animation
+    const boughtToggle = document.getElementById('bought-toggle');
+    const statusText = document.getElementById('status-text');
+
+    if (boughtToggle) {
+        boughtToggle.addEventListener('change', function() {
+            statusText.textContent = this.checked ? 'Owned' : 'Dream';
+            showNotification(`Status changed to ${this.checked ? 'Owned' : 'Dream'}`, 'success');
+        });
+    }
+
+    // Auto-save indicator
+    let autoSaveTimer;
+    const saveStatus = document.getElementById('save-status');
+
+    const formFields = document.querySelectorAll('input, textarea, select');
+    formFields.forEach(field => {
+        field.addEventListener('input', function() {
+            clearTimeout(autoSaveTimer);
+            saveStatus.classList.remove('hidden');
+
+            autoSaveTimer = setTimeout(() => {
+                saveStatus.classList.add('hidden');
+                showNotification('Changes saved automatically', 'success');
+            }, 2000);
+        });
+    });
 });
+
+// Helper Functions
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function setBrand(brand) {
+    document.getElementById('id_brand').value = brand;
+    document.getElementById('brand-suggestions').classList.add('hidden');
+
+    // Also update picture brand if auto-fill is enabled
+    const picBrand = document.getElementById('id_brand');
+    if (picBrand && document.getElementById('auto-fill-pictures')?.checked) {
+        picBrand.value = brand;
+    }
+}
+
+function syncPictureDetails() {
+    const carBrand = document.getElementById('id_brand')?.value;
+    const carModel = document.getElementById('id_model')?.value;
+    const carYear = document.getElementById('id_year')?.value;
+
+    const picBrand = document.getElementById('id_brand');
+    const picModel = document.getElementById('id_model');
+    const picYear = document.getElementById('id_year');
+
+    if (picBrand && carBrand) picBrand.value = carBrand;
+    if (picModel && carModel) picModel.value = carModel;
+    if (picYear && carYear) picYear.value = carYear;
+
+    showNotification('Picture details synced with car details', 'success');
+}
+
+function clearPreview() {
+    const fileInput = document.getElementById('id_picture');
+    const uploadContent = document.getElementById('upload-content');
+    const preview = document.getElementById('preview');
+    const previewImage = document.getElementById('preview-image');
+
+    if (fileInput) fileInput.value = '';
+    if (uploadContent) uploadContent.classList.remove('hidden');
+    if (preview) preview.classList.add('hidden');
+    if (previewImage) previewImage.src = '';
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear all form fields?')) {
+        document.querySelector('form').reset();
+        clearPreview();
+        showNotification('Form cleared', 'info');
+    }
+}
+
+function formatText(command) {
+    const description = document.getElementById('id_description');
+    if (description) {
+        document.execCommand(command, false, null);
+        description.focus();
+    }
+}
+
+function calculateMonthlyPayment() {
+    const priceField = document.getElementById('id_price');
+    const calculator = document.getElementById('payment-calculator');
+    const monthlyPayment = document.getElementById('monthly-payment');
+
+    if (!priceField || !priceField.value) {
+        showNotification('Please enter a price first', 'error');
+        return;
+    }
+
+    const price = parseFloat(priceField.value);
+    const downPayment = price * 0.20;
+    const loanAmount = price - downPayment;
+    const monthlyRate = 0.05 / 12;
+    const months = 60; // 5 years
+
+    const payment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) /
+                    (Math.pow(1 + monthlyRate, months) - 1);
+
+    monthlyPayment.textContent = `$${payment.toFixed(2)}`;
+    calculator.classList.remove('hidden');
+
+    showNotification('Monthly payment calculated', 'success');
+}
+
+function simulateUploadProgress() {
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercent = document.getElementById('progress-percent');
+    const uploadProgress = document.getElementById('upload-progress');
+
+    if (!progressBar || !uploadProgress) return;
+
+    uploadProgress.classList.remove('hidden');
+
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = `${progress}%`;
+        progressPercent.textContent = `${progress}%`;
+
+        if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+                uploadProgress.classList.add('hidden');
+                showNotification('Picture ready to upload', 'success');
+            }, 500);
+        }
+    }, 100);
+}
+
+function previewCar() {
+    // Get form values
+    const brand = document.getElementById('id_brand')?.value || 'Tesla';
+    const model = document.getElementById('id_model')?.value || 'Model S';
+    const year = document.getElementById('id_year')?.value || '2024';
+    const horsepower = document.getElementById('id_horsepower')?.value || '500';
+    const price = document.getElementById('id_price')?.value || '79999';
+    const description = document.getElementById('id_description')?.value || 'My dream electric car';
+    const bought = document.getElementById('bought-toggle')?.checked || false;
+
+    // Create preview HTML
+    const previewContent = document.getElementById('preview-content');
+    previewContent.innerHTML = `
+        <div class="bg-slate-800/50 rounded-xl p-6">
+            <div class="flex items-start justify-between mb-6">
+                <div>
+                    <h4 class="text-2xl font-bold">${brand} ${model}</h4>
+                    <p class="text-slate-400">${year}</p>
+                </div>
+                <span class="px-4 py-2 ${bought ? 'bg-emerald-900/30 text-emerald-400' : 'bg-amber-900/30 text-amber-400'} rounded-full">
+                    ${bought ? 'Owned' : 'Dream Car'}
+                </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-slate-900/50 rounded-lg p-4">
+                    <p class="text-slate-400 text-sm">Price</p>
+                    <p class="text-xl font-bold text-emerald-400">$${parseFloat(price).toFixed(2)}</p>
+                </div>
+                <div class="bg-slate-900/50 rounded-lg p-4">
+                    <p class="text-slate-400 text-sm">Horsepower</p>
+                    <p class="text-xl font-bold text-emerald-400">${horsepower} HP</p>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <p class="text-slate-400 text-sm mb-2">Description</p>
+                <div class="bg-slate-900/30 rounded-lg p-4">
+                    <p class="text-slate-300">${description || 'No description provided'}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center text-slate-500">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span class="text-sm">This is how your car will appear in the collection</span>
+            </div>
+        </div>
+    `;
+
+    // Show modal
+    document.getElementById('preview-modal').classList.remove('hidden');
+}
+
+function closePreview() {
+    document.getElementById('preview-modal').classList.add('hidden');
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300 translate-x-full ${type === 'error' ? 'bg-rose-900/90 text-rose-300 border border-rose-800' : type === 'info' ? 'bg-blue-900/90 text-blue-300 border border-blue-800' : 'bg-emerald-900/90 text-emerald-300 border border-emerald-800'}`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : type === 'info' ? 'fa-info-circle' : 'fa-check-circle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+        notification.classList.add('translate-x-0');
+    }, 10);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('translate-x-0');
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
 </script>
+
+<style>
+/* Custom slider styles */
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    border: none;
+}
+
+/* Text editor button styles */
+button[onclick^="formatText"]:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Transition for modal */
+#preview-modal {
+    backdrop-filter: blur(10px);
+}
+
+/* Smooth animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
 {% endblock %}

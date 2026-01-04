@@ -135,7 +135,7 @@ class DreamCar(models.Model):
     date_bought = models.DateTimeField(null=True, blank=True)
     date_added = models.DateTimeField(default=timezone.now)
     description = models.TextField(default="")
-    Pictures = models.ManyToManyField(Pictures, blank=True)
+    pictures = models.ManyToManyField(Pictures, blank=True)
 
     def __str__(self):
         return f"{self.brand} - {self.model}"
