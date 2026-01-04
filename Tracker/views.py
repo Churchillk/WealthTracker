@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.urls import reverse_lazy
 from django.db.models import Sum, Count
+from datetime import datetime
 from django.utils import timezone
 from datetime import timedelta
 from .models import *
@@ -91,6 +92,19 @@ class IncomeSourceListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return IncomeSource.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        total_worth = self.get_queryset().aggregate(Sum('worth'))['worth__sum'] or 0
+        salary = IncomeSource.objects.filter(user=self.request.user, client="Monopoly").aggregate(Sum('worth'))['worth__sum'] or 0
+        unique_clients = IncomeSource.objects.filter(user=self.request.user).values('client').distinct().count()
+        print("------------------------->", total_worth)
+        context.update({
+            'salary': salary,
+            'clients': unique_clients,
+            'total_worth': total_worth,
+        })
+        return context
 
 class IncomeSourceCreateView(LoginRequiredMixin, CreateView):
     model = IncomeSource
@@ -242,20 +256,201 @@ class ExpensesListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Expenses.objects.filter(user=self.request.user)
 
-class ExpensesCreateView(LoginRequiredMixin, CreateView):
+    def get_context_data(self, **kwargs):
+        import datetime
+        from django.db.models import Sum
+        from django.utils import timezone
+
+        context = super().get_context_data(**kwargs)
+
+        # Total expenses
+        total_expenses = Expenses.objects.filter(user=self.request.user).aggregate(Sum('worth'))['worth__sum'] or 0
+
+        # Monthly expenses
+        this_month = timezone.now().month
+        this_year = timezone.now().year
+        monthly_expenses = Expenses.objects.filter(
+            user=self.request.user,
+            date__year=this_year,
+            date__month=this_month
+        ).aggregate(Sum('worth'))['worth__sum'] or 0
+
+        # Average monthly expenses
+        # First, get all months where there are expenses
+        expenses_by_month = Expenses.objects.filter(user=self.request.user).annotate(
+            month=models.functions.TruncMonth('date')
+        ).values('month').annotate(
+            monthly_total=Sum('worth')
+        ).order_by('month')
+
+        if expenses_by_month:
+            avg_expenses = sum(item['monthly_total'] for item in expenses_by_month) / len(expenses_by_month)
+        else:
+            avg_expenses = 0
+
+        # Data for Expense Trends Chart (Last 6 months)
+        six_months_ago = timezone.now() - datetime.timedelta(days=180)
+        recent_expenses = Expenses.objects.filter(
+            user=self.request.user,
+            date__gte=six_months_ago
+        ).annotate(
+            month=models.functions.TruncMonth('date')
+        ).values('month').annotate(
+            total=Sum('worth')
+        ).order_by('month')
+
+        # Prepare chart data
+        months = []
+        monthly_totals = []
+        for expense in recent_expenses:
+            months.append(expense['month'].strftime('%b %Y'))
+            monthly_totals.append(float(expense['total']))
+
+        # Data for Category Distribution (simple categorization based on name keywords)
+        categories = ['Business', 'Personal', 'Investment', 'Food']
+        category_data = []
+
+        # Simple categorization logic (you might want to improve this)
+        business_keywords = ['business', 'office', 'work', 'company', 'client']
+        personal_keywords = ['personal', 'home', 'family', 'shopping', 'food']
+        investment_keywords = ['investment', 'stock', 'crypto', 'property', 'asset']
+
+        business_total = Expenses.objects.filter(
+            user=self.request.user,
+            category='BUSINESS'
+        ).aggregate(Sum('worth'))['worth__sum'] or 0
+
+        personal_total = Expenses.objects.filter(
+            user=self.request.user,
+            category='PERSONAL'
+        ).aggregate(Sum('worth'))['worth__sum'] or 0
+
+        investment_total = Expenses.objects.filter(
+            user=self.request.user,
+            category='INVESTMENT'
+        ).aggregate(Sum('worth'))['worth__sum'] or 0
+        food_total = Expenses.objects.filter(
+            user=self.request.user,
+            category='FOOD'
+        ).aggregate(Sum('worth'))['worth__sum'] or 0
+
+        category_data = [
+            float(business_total),
+            float(personal_total),
+            float(investment_total),
+            float(food_total)
+        ]
+
+        context.update({
+            'total_expenses': total_expenses,
+            'monthly_expenses': monthly_expenses,
+            'avg_expenses': avg_expenses,
+            'budget': 85.94,
+            'chart_months': months,
+            'chart_monthly_totals': monthly_totals,
+            'chart_categories': categories,
+            'chart_category_data': category_data,
+            'business_total': business_total,
+            'personal_total': personal_total,
+            'investment_total': investment_total,
+            'food_total': food_total,
+        })
+
+        return context
+
+class ExpenseContextMixin:
+    """Mixin to add expense context data to views."""
+
+    def get_expense_context(self):
+        """Get shared expense context data."""
+        now = timezone.now()
+        month_expenses = Expenses.objects.filter(
+            user=self.request.user,
+            date__year=now.year,
+            date__month=now.month
+        ).aggregate(Sum('worth'))['worth__sum'] or 0
+
+        days_in_month = datetime.now().day
+        daily_avg = month_expenses / days_in_month if days_in_month > 0 else 0
+
+        budget = 85.27  # configurable per user
+        budget_remaining = budget - month_expenses
+        budget_percentage = (month_expenses / budget * 100) if budget > 0 else 0
+
+        recent_expenses = Expenses.objects.filter(
+            user=self.request.user
+        ).order_by('-date')[:5]
+
+        categories = ['BUSINESS', 'PERSONAL', 'INVESTMENT', 'FOOD']
+        category_stats = {}
+        for category in categories:
+            total = Expenses.objects.filter(
+                user=self.request.user,
+                category=category
+            ).aggregate(Sum('worth'))['worth__sum'] or 0
+            category_stats[category] = total
+
+        total_all = sum(category_stats.values())
+        category_percentages = {}
+        for category, total in category_stats.items():
+            category_percentages[category] = (total / total_all * 100) if total_all > 0 else 0
+
+        return {
+            'month_expenses': month_expenses,
+            'daily_avg': daily_avg,
+            'budget': budget,
+            'budget_remaining': budget_remaining,
+            'budget_percentage': min(budget_percentage, 100),
+            'recent_expenses': recent_expenses,
+            'recent_count': recent_expenses.count(),
+            'category_stats': category_stats,
+            'category_percentages': category_percentages,
+            'total_expenses': total_all,
+        }
+
+class ExpensesCreateView(LoginRequiredMixin, ExpenseContextMixin, CreateView):
     model = Expenses
     form_class = ExpensesForm
     template_name = 'tracker/expenses_form.html'
     success_url = reverse_lazy('expenses-list')
 
+    def get_initial(self):
+        """Set initial values for the form."""
+        initial = super().get_initial()
+        # Set default date to current time
+        now = timezone.now()
+        initial['date'] = now.strftime('%Y-%m-%dT%H:%M')
+        return initial
+
     def form_valid(self, form):
+        """Set the user before saving."""
         form.instance.user = self.request.user
         return super().form_valid(form)
 
-class ExpensesUpdateView(LoginRequiredMixin, UpdateView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_expense_context())
+        return context
+
+
+class ExpensesUpdateView(LoginRequiredMixin, ExpenseContextMixin, UpdateView):
     model = Expenses
     form_class = ExpensesForm
     template_name = 'tracker/expenses_form.html'
+    success_url = reverse_lazy('expenses-list')
+
+    def get_queryset(self):
+        return Expenses.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_expense_context())
+        return context
+
+
+class ExpensesDeleteView(LoginRequiredMixin, DeleteView):
+    model = Expenses
+    template_name = 'tracker/expenses_confirm_delete.html'
     success_url = reverse_lazy('expenses-list')
 
     def get_queryset(self):

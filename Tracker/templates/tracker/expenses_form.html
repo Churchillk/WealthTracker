@@ -1,18 +1,104 @@
 {% extends 'tracker/base.html' %}
 {% load widget_tweaks %}
+{% load custom_filters %}
 
 {% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Expense{% endblock %}
-{% block header_title %}{% if form.instance.pk %}Edit Expense{% else %}Add New Expense{% endif %}{% endblock %}</h3>
-{% block header_subtitle %}{% if form.instance.pk %}Update expense details{% else %}Record new expense{% endif %}</p>{% endblock %}
+{% block header_title %}{% if form.instance.pk %}Edit Expense{% else %}Add New Expense{% endif %}{% endblock %}
+{% block header_subtitle %}{% if form.instance.pk %}Update expense details{% else %}Record new expense{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
     .category-option {
         transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
     }
 
     .category-option:hover {
         transform: translateY(-2px);
+    }
+
+    .category-option.active {
+        border-color: #f43f5e;
+        box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
+    }
+
+    .quick-action-btn {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(71, 85, 105, 0.5);
+        transition: all 0.3s ease;
+    }
+
+    .quick-action-btn:hover {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(244, 63, 94, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .preview-card {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.7) 100%);
+    }
+
+    .category-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .category-business {
+        background-color: rgba(59, 130, 246, 0.2);
+        color: rgb(96 165 250);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .category-personal {
+        background-color: rgba(168, 85, 247, 0.2);
+        color: rgb(192 132 252);
+        border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .category-investment {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: rgb(52 211 153);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .category-food {
+        background-color: rgba(71, 85, 105, 0.2);
+        color: rgb(148 163 184);
+        border: 1px solid rgba(71, 85, 105, 0.3);
+    }
+
+    .amount-preview {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #f43f5e 0%, #ec4899 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin: 1rem 0;
+    }
+
+    .animated-progress {
+        height: 0.5rem;
+        border-radius: 0.25rem;
+        background: linear-gradient(90deg,
+            #10b981 0%,
+            #10b981 var(--progress),
+            #334155 var(--progress),
+            #334155 100%);
+        transition: --progress 0.5s ease;
+    }
+
+    @property --progress {
+        syntax: '<percentage>';
+        inherits: false;
+        initial-value: 0%;
     }
 </style>
 {% endblock %}
@@ -47,8 +133,8 @@
 
         <div class="stat-card card p-6 rounded-xl">
             <div class="flex items-center">
-                <div class="w-12 h-12 bg-emerald-900/50 rounded-full flex items-center justify-center mr-4">
-                    <i class="fas fa-bullseye text-emerald-400 text-xl"></i>
+                <div class="w-12 h-12 {% if budget_remaining >= 0 %}bg-emerald-900/50{% else %}bg-rose-900/50{% endif %} rounded-full flex items-center justify-center mr-4">
+                    <i class="fas {% if budget_remaining >= 0 %}fa-bullseye text-emerald-400{% else %}fa-exclamation-triangle text-rose-400{% endif %} text-xl"></i>
                 </div>
                 <div>
                     <p class="text-slate-400 text-sm">Budget Remaining</p>
@@ -64,6 +150,7 @@
         <!-- Left Column - Form -->
         <div class="lg:col-span-2">
             <div class="card rounded-xl p-8">
+                <!-- Form Header -->
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <h3 class="text-xl font-bold">
@@ -73,20 +160,24 @@
                         <p class="text-slate-400 text-sm mt-1">
                             {% if form.instance.pk %}
                             Last updated: {{ form.instance.date|date:"M d, Y" }}
+                            {% if form.instance.category %}
+                            <span class="ml-2 category-pill category-{{ form.instance.category|lower }}">{{ form.instance.get_category_display }}</span>
+                            {% endif %}
                             {% else %}
                             Track your spending to optimize your finances
                             {% endif %}
                         </p>
                     </div>
                     <div class="text-right">
-                        <span class="px-3 py-1 bg-rose-900/30 text-rose-400 rounded-full text-sm">
-                            <i class="fas fa-exclamation-circle mr-1"></i> Expense
-                        </span>
+                        <div id="amountPreview" class="amount-preview">$0.00</div>
                     </div>
                 </div>
 
                 <form method="post" class="space-y-8" id="expenseForm">
                     {% csrf_token %}
+
+                    <!-- Hidden category field (will be set by JavaScript) -->
+                    {{ form.category }}
 
                     <!-- Form Errors -->
                     {% if form.errors %}
@@ -120,7 +211,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Name Field -->
                             <div class="space-y-2">
-                                <label class="block text-sm font-medium text-slate-300">
+                                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-slate-300">
                                     <i class="fas fa-tag mr-2"></i>Expense Name
                                 </label>
                                 {% render_field form.name class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="e.g., Groceries, Rent, Utilities" %}
@@ -129,7 +220,7 @@
 
                             <!-- Amount Field -->
                             <div class="space-y-2">
-                                <label class="block text-sm font-medium text-slate-300">
+                                <label for="{{ form.worth.id_for_label }}" class="block text-sm font-medium text-slate-300">
                                     <i class="fas fa-money-bill-wave mr-2"></i>Amount Spent
                                 </label>
                                 <div class="relative">
@@ -144,8 +235,8 @@
 
                             <!-- Date Field -->
                             <div class="space-y-2">
-                                <label class="block text-sm font-medium text-slate-300">
-                                    <i class="fas fa-calendar-alt mr-2"></i>Date
+                                <label for="{{ form.date.id_for_label }}" class="block text-sm font-medium text-slate-300">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Date & Time
                                 </label>
                                 {% render_field form.date class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" %}
                                 <p class="text-xs text-slate-500">When did you make this expense?</p>
@@ -157,24 +248,30 @@
                                     <i class="fas fa-layer-group mr-2"></i>Category
                                 </label>
                                 <div class="grid grid-cols-2 gap-2">
-                                    <button type="button" onclick="setCategory('Business')" class="category-option p-3 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
+                                    <button type="button" onclick="setCategory('BUSINESS')"
+                                            class="category-option p-3 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-800/30 rounded-lg text-center">
                                         <i class="fas fa-briefcase text-blue-400 text-lg mb-1"></i>
                                         <p class="text-sm font-medium">Business</p>
                                     </button>
-                                    <button type="button" onclick="setCategory('Personal')" class="category-option p-3 bg-purple-900/20 hover:bg-purple-900/30 border border-purple-800/30 rounded-lg text-center">
+                                    <button type="button" onclick="setCategory('PERSONAL')"
+                                            class="category-option p-3 bg-purple-900/20 hover:bg-purple-900/30 border border-purple-800/30 rounded-lg text-center">
                                         <i class="fas fa-user text-purple-400 text-lg mb-1"></i>
                                         <p class="text-sm font-medium">Personal</p>
                                     </button>
-                                    <button type="button" onclick="setCategory('Investment')" class="category-option p-3 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
+                                    <button type="button" onclick="setCategory('INVESTMENT')"
+                                            class="category-option p-3 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-800/30 rounded-lg text-center">
                                         <i class="fas fa-chart-line text-emerald-400 text-lg mb-1"></i>
                                         <p class="text-sm font-medium">Investment</p>
                                     </button>
-                                    <button type="button" onclick="setCategory('Other')" class="category-option p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-center">
+                                    <button type="button" onclick="setCategory('FOOD')"
+                                            class="category-option p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-center">
                                         <i class="fas fa-ellipsis-h text-slate-400 text-lg mb-1"></i>
-                                        <p class="text-sm font-medium">Other</p>
+                                        <p class="text-sm font-medium">Food</p>
                                     </button>
                                 </div>
-                                <input type="hidden" id="categoryInput" name="category">
+                                <p class="text-xs text-slate-500 mt-2">
+                                    Selected: <span id="selectedCategory" class="font-medium text-rose-400">None</span>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -190,7 +287,7 @@
 
                         <!-- Description Field -->
                         <div class="space-y-2">
-                            <label class="block text-sm font-medium text-slate-300">
+                            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-300">
                                 <i class="fas fa-sticky-note mr-2"></i>Description & Notes
                             </label>
                             {% render_field form.description class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" rows="4" placeholder="Add any notes about this expense..." %}
@@ -204,23 +301,26 @@
                     <!-- Quick Actions -->
                     <div class="space-y-4">
                         <h4 class="text-lg font-semibold">Quick Actions</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setAmount(50)">
                                 <i class="fas fa-coins text-rose-400 text-lg mb-2"></i>
-                                <p class="font-medium">Add $50</p>
+                                <p class="font-medium">$50</p>
                                 <p class="text-xs text-slate-400">Quick expense</p>
                             </button>
-
-                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setTodayDate()">
-                                <i class="fas fa-calendar-day text-violet-400 text-lg mb-2"></i>
-                                <p class="font-medium">Today's Date</p>
-                                <p class="text-xs text-slate-400">Set to current</p>
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setAmount(100)">
+                                <i class="fas fa-wallet text-violet-400 text-lg mb-2"></i>
+                                <p class="font-medium">$100</p>
+                                <p class="text-xs text-slate-400">Common amount</p>
                             </button>
-
+                            <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="setTodayDate()">
+                                <i class="fas fa-calendar-day text-emerald-400 text-lg mb-2"></i>
+                                <p class="font-medium">Today</p>
+                                <p class="text-xs text-slate-400">Set date</p>
+                            </button>
                             <button type="button" class="quick-action-btn p-4 rounded-lg text-center" onclick="clearForm()">
                                 <i class="fas fa-eraser text-slate-400 text-lg mb-2"></i>
-                                <p class="font-medium">Clear Form</p>
-                                <p class="text-xs text-slate-400">Reset all fields</p>
+                                <p class="font-medium">Clear</p>
+                                <p class="text-xs text-slate-400">Reset form</p>
                             </button>
                         </div>
                     </div>
@@ -239,7 +339,7 @@
                                     <i class="fas fa-times mr-2"></i>Cancel
                                 </a>
                                 <button type="submit"
-                                        class="btn-primary px-8 py-3 flex items-center bg-gradient-to-r from-rose-600 to-pink-600">
+                                        class="btn-primary px-8 py-3 flex items-center bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700">
                                     <i class="fas fa-save mr-2"></i>
                                     {% if form.instance.pk %}Update Expense{% else %}Record Expense{% endif %}
                                 </button>
@@ -261,20 +361,25 @@
                     <div>
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-sm text-slate-400">Monthly Budget</span>
-                            <span class="text-sm font-medium">${{ budget|default:"2000" }}</span>
+                            <span class="text-sm font-medium">${{ budget|default:"2000"|floatformat:2 }}</span>
                         </div>
-                        <div class="w-full bg-slate-800 rounded-full h-2">
-                            <div class="bg-emerald-500 h-2 rounded-full" style="width: {{ budget_percentage|default:"75" }}%"></div>
+                        <div class="animated-progress" style="--progress: {{ budget_percentage|default:"0" }}%"></div>
+                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="p-3 bg-slate-800/30 rounded-lg">
                             <p class="text-xs text-slate-400">Spent</p>
-                            <p class="font-medium text-rose-400">${{ month_expenses|default:"0" }}</p>
+                            <p class="font-medium text-rose-400">${{ month_expenses|default:"0"|floatformat:2 }}</p>
                         </div>
                         <div class="p-3 bg-slate-800/30 rounded-lg">
                             <p class="text-xs text-slate-400">Remaining</p>
-                            <p class="font-medium text-emerald-400">${{ budget_remaining|default:"2000" }}</p>
+                            <p class="font-medium {% if budget_remaining >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                                ${{ budget_remaining|default:"2000"|floatformat:2 }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -286,70 +391,65 @@
                     <i class="fas fa-tags mr-2"></i>Expense Categories
                 </h4>
                 <div class="space-y-3">
-                    <div class="flex items-center justify-between p-2">
+                    {% for category, total in category_stats.items %}
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-800/50 rounded-lg transition-colors">
                         <div class="flex items-center">
-                            <div class="w-8 h-8 bg-blue-900/30 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-briefcase text-blue-400 text-sm"></i>
+                            <div class="w-8 h-8
+                                {% if category == 'BUSINESS' %}bg-blue-900/30
+                                {% elif category == 'PERSONAL' %}bg-purple-900/30
+                                {% elif category == 'INVESTMENT' %}bg-emerald-900/30
+                                {% else %}bg-slate-700{% endif %}
+                                rounded-full flex items-center justify-center mr-3">
+                                <i class="fas
+                                    {% if category == 'BUSINESS' %}fa-briefcase text-blue-400
+                                    {% elif category == 'PERSONAL' %}fa-user text-purple-400
+                                    {% elif category == 'INVESTMENT' %}fa-chart-line text-emerald-400
+                                    {% else %}fa-ellipsis-h text-slate-400{% endif %}
+                                    text-sm"></i>
                             </div>
-                            <span class="text-sm">Business</span>
+                            <span class="text-sm">{{ category|title }}</span>
                         </div>
-                        <span class="text-sm text-slate-400">35%</span>
-                    </div>
-                    <div class="flex items-center justify-between p-2">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-purple-900/30 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-user text-purple-400 text-sm"></i>
-                            </div>
-                            <span class="text-sm">Personal</span>
+                        <div class="text-right">
+                            <div class="text-sm font-medium">${{ total|floatformat:2 }}</div>
+                            <div class="text-xs text-slate-400">{{ category_percentages|get_item:category|floatformat:1 }}%</div>
                         </div>
-                        <span class="text-sm text-slate-400">45%</span>
                     </div>
-                    <div class="flex items-center justify-between p-2">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-emerald-900/30 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-chart-line text-emerald-400 text-sm"></i>
-                            </div>
-                            <span class="text-sm">Investment</span>
-                        </div>
-                        <span class="text-sm text-slate-400">15%</span>
-                    </div>
-                    <div class="flex items-center justify-between p-2">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-ellipsis-h text-slate-400 text-sm"></i>
-                            </div>
-                            <span class="text-sm">Other</span>
-                        </div>
-                        <span class="text-sm text-slate-400">5%</span>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
 
             <!-- Quick Tips -->
             <div class="card rounded-xl p-6">
                 <h4 class="text-lg font-semibold mb-4">
-                    <i class="fas fa-lightbulb mr-2"></i>Smart Spending
+                    <i class="fas fa-lightbulb mr-2"></i>Smart Spending Tips
                 </h4>
                 <div class="space-y-3">
                     <div class="flex items-start space-x-3">
                         <i class="fas fa-check text-emerald-400 mt-1"></i>
                         <div>
-                            <p class="text-sm font-medium">Track Regularly</p>
-                            <p class="text-xs text-slate-400">Record expenses daily for accuracy</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start space-x-3">
-                        <i class="fas fa-check text-emerald-400 mt-1"></i>
-                        <div>
-                            <p class="text-sm font-medium">Categorize Wisely</p>
+                            <p class="text-sm font-medium">Categorize Accurately</p>
                             <p class="text-xs text-slate-400">Helps identify spending patterns</p>
                         </div>
                     </div>
                     <div class="flex items-start space-x-3">
                         <i class="fas fa-check text-emerald-400 mt-1"></i>
                         <div>
+                            <p class="text-sm font-medium">Track Immediately</p>
+                            <p class="text-xs text-slate-400">Record expenses right after purchase</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium">Review Weekly</p>
+                            <p class="text-xs text-slate-400">Check spending against budget regularly</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-check text-emerald-400 mt-1"></i>
+                        <div>
                             <p class="text-sm font-medium">Set Limits</p>
-                            <p class="text-xs text-slate-400">Establish budget for each category</p>
+                            <p class="text-xs text-slate-400">Establish category-specific budgets</p>
                         </div>
                     </div>
                 </div>
@@ -364,13 +464,18 @@
                     <span class="text-xs text-rose-400">{{ recent_count }} records</span>
                 </div>
                 <div class="space-y-3">
-                    {% for expense in recent_expenses|slice:":3" %}
-                    <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                    {% for expense in recent_expenses %}
+                    <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-800/70 transition-colors">
                         <div>
                             <p class="font-medium text-sm">{{ expense.name|truncatechars:20 }}</p>
-                            <p class="text-xs text-slate-400">{{ expense.date|date:"M d" }}</p>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span class="category-pill category-{{ expense.category|lower }} text-xs">
+                                    {{ expense.get_category_display }}
+                                </span>
+                                <span class="text-xs text-slate-400">{{ expense.date|date:"M d" }}</span>
+                            </div>
                         </div>
-                        <span class="font-bold text-rose-400">${{ expense.worth }}</span>
+                        <span class="font-bold text-rose-400">${{ expense.worth|floatformat:2 }}</span>
                     </div>
                     {% empty %}
                     <p class="text-slate-400 text-center py-4 text-sm">No recent expenses</p>
@@ -386,44 +491,53 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const amountInput = document.getElementById('amountInput');
+    const amountPreview = document.getElementById('amountPreview');
     const descriptionTextarea = document.querySelector('textarea[name="description"]');
     const charCount = document.getElementById('charCount');
     const budgetImpact = document.getElementById('budgetImpact');
+    const selectedCategorySpan = document.getElementById('selectedCategory');
+    const categorySelect = document.getElementById('id_category');
+    const categoryOptions = document.querySelectorAll('.category-option');
 
-    // Update budget impact
+    // Initialize with existing data if editing
+    const initialCategory = "{{ form.instance.category|default:'' }}";
+    if (initialCategory) {
+        setCategoryUI(initialCategory);
+        selectedCategorySpan.textContent = "{{ form.instance.get_category_display|default:'None' }}";
+    }
+
+    // Initialize amount preview
+    const initialAmount = parseFloat("{{ form.instance.worth|default:'0' }}") || 0;
+    if (initialAmount > 0) {
+        updateAmountPreview(initialAmount);
+        amountInput.value = initialAmount;
+    }
+
+    // Update amount preview and budget impact
     amountInput.addEventListener('input', function() {
         const value = this.value || '0';
         const numValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
 
-        // Update budget impact
-        const budget = {{ budget|default:"2000" }};
-        const spent = {{ month_expenses|default:"0" }};
-        const newTotal = spent + numValue;
-        const remaining = budget - newTotal;
+        // Update preview
+        updateAmountPreview(numValue);
 
-        if (remaining >= 0) {
-            budgetImpact.textContent = "$" + remaining.toFixed(2) + " remaining";
-            budgetImpact.className = "text-xs text-emerald-400";
-        } else {
-            budgetImpact.textContent = "$" + Math.abs(remaining).toFixed(2) + " over budget";
-            budgetImpact.className = "text-xs text-rose-400";
-        }
+        // Update budget impact
+        updateBudgetImpact(numValue);
     });
 
-    // Character count for description
+    // Update character count for description
     if (descriptionTextarea) {
         descriptionTextarea.addEventListener('input', function() {
             const length = this.value.length;
             charCount.textContent = length + '/500';
+
+            // Color coding based on length
             if (length > 450) {
-                charCount.classList.remove('text-slate-500');
-                charCount.classList.add('text-amber-400');
+                charCount.className = "text-xs text-amber-400";
             } else if (length > 480) {
-                charCount.classList.remove('text-amber-400');
-                charCount.classList.add('text-rose-400');
+                charCount.className = "text-xs text-rose-400";
             } else {
-                charCount.classList.remove('text-amber-400', 'text-rose-400');
-                charCount.classList.add('text-slate-500');
+                charCount.className = "text-xs text-slate-500";
             }
         });
 
@@ -431,70 +545,186 @@ document.addEventListener('DOMContentLoaded', function() {
         descriptionTextarea.dispatchEvent(new Event('input'));
     }
 
-    // Trigger amount input for initial budget impact
+    // Trigger initial updates
     amountInput.dispatchEvent(new Event('input'));
 });
 
+function updateAmountPreview(amount) {
+    const amountPreview = document.getElementById('amountPreview');
+    amountPreview.textContent = '$' + amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function updateBudgetImpact(amount) {
+    const budgetImpact = document.getElementById('budgetImpact');
+    const budget = parseFloat("{{ budget|default:'2000' }}") || 2000;
+    const spent = parseFloat("{{ month_expenses|default:'0' }}") || 0;
+    const newTotal = spent + amount;
+    const remaining = budget - newTotal;
+
+    if (remaining >= 0) {
+        budgetImpact.textContent = "$" + remaining.toFixed(2) + " remaining after this expense";
+        budgetImpact.className = "text-xs text-emerald-400";
+    } else {
+        budgetImpact.textContent = "$" + Math.abs(remaining).toFixed(2) + " over budget with this expense";
+        budgetImpact.className = "text-xs text-rose-400";
+    }
+}
+
 function setCategory(category) {
-    const nameInput = document.querySelector('input[name="name"]');
-    const currentValue = nameInput.value.toLowerCase();
+    const categorySelect = document.getElementById('id_category');
+    const selectedCategorySpan = document.getElementById('selectedCategory');
 
-    // Remove existing category from name if present
-    const categories = ['business', 'personal', 'investment', 'other'];
-    let cleanName = currentValue;
-    categories.forEach(cat => {
-        cleanName = cleanName.replace(cat, '').trim();
-    });
+    // Update the hidden select field
+    categorySelect.value = category;
 
-    // Add new category
-    nameInput.value = cleanName + (cleanName ? ' ' : '') + category;
-    document.getElementById('categoryInput').value = category;
+    // Update UI display
+    const categoryNames = {
+        'BUSINESS': 'Business',
+        'PERSONAL': 'Personal',
+        'INVESTMENT': 'Investment',
+        'FOOD': 'Food'
+    };
+    selectedCategorySpan.textContent = categoryNames[category];
 
-    // Visual feedback
+    // Update visual feedback on buttons
+    setCategoryUI(category);
+
+    // Auto-suggest name based on category
+    autoSuggestName(category);
+}
+
+function setCategoryUI(category) {
+    // Remove active class from all buttons
     document.querySelectorAll('.category-option').forEach(opt => {
-        opt.classList.remove('ring-2', 'ring-rose-500');
+        opt.classList.remove('active');
     });
-    event.currentTarget.classList.add('ring-2', 'ring-rose-500');
+
+    // Add active class to selected button
+    let button;
+    if (category === 'BUSINESS') {
+        button = document.querySelector('button[onclick="setCategory(\'BUSINESS\')"]');
+    } else if (category === 'PERSONAL') {
+        button = document.querySelector('button[onclick="setCategory(\'PERSONAL\')"]');
+    } else if (category === 'INVESTMENT') {
+        button = document.querySelector('button[onclick="setCategory(\'INVESTMENT\')"]');
+    } else {
+        button = document.querySelector('button[onclick="setCategory(\'FOOD\')"]');
+    }
+
+    if (button) {
+        button.classList.add('active');
+    }
+}
+
+function autoSuggestName(category) {
+    const nameInput = document.querySelector('input[name="name"]');
+    if (!nameInput.value.trim()) {
+        const suggestions = {
+            'BUSINESS': ['Office Supplies', 'Client Meeting', 'Business Travel', 'Software Subscription'],
+            'PERSONAL': ['Groceries', 'Dining Out', 'Shopping', 'Entertainment'],
+            'INVESTMENT': ['Stock Purchase', 'Crypto Investment', 'Real Estate', 'Mutual Fund'],
+            'FOOD': ['Groceries', 'Dining Out', 'Snacks', 'Restaurant']
+        };
+
+        const suggestion = suggestions[category][Math.floor(Math.random() * suggestions[category].length)];
+        nameInput.value = suggestion;
+        nameInput.focus();
+    }
 }
 
 function setAmount(amount) {
     const amountInput = document.getElementById('amountInput');
     amountInput.value = amount;
     amountInput.dispatchEvent(new Event('input'));
+    amountInput.focus();
 }
 
 function setTodayDate() {
     const now = new Date();
+    // Format: YYYY-MM-DDTHH:MM
     const today = now.toISOString().slice(0, 16);
     const dateInput = document.querySelector('input[name="date"]');
     dateInput.value = today;
 }
 
 function clearForm() {
-    if (confirm('Are you sure you want to clear all form fields?')) {
+    if (confirm('Are you sure you want to clear all form fields? This cannot be undone.')) {
         document.getElementById('expenseForm').reset();
-        document.getElementById('categoryInput').value = '';
+        document.getElementById('amountPreview').textContent = '$0.00';
+        document.getElementById('selectedCategory').textContent = 'None';
         document.getElementById('budgetImpact').textContent = '';
         document.getElementById('charCount').textContent = '0/500';
 
         // Reset category buttons
         document.querySelectorAll('.category-option').forEach(opt => {
-            opt.classList.remove('ring-2', 'ring-rose-500');
+            opt.classList.remove('active');
         });
+
+        // Reset hidden category field
+        document.getElementById('id_category').value = '';
+
+        // Set default date to now
+        setTodayDate();
     }
 }
 
-// Form validation
+// Enhanced form validation
 document.getElementById('expenseForm').addEventListener('submit', function(e) {
     const amountInput = document.getElementById('amountInput');
     const amount = parseFloat(amountInput.value);
+    const categorySelect = document.getElementById('id_category');
 
+    let errors = [];
+
+    // Validate amount
     if (isNaN(amount) || amount <= 0) {
+        errors.push('Please enter a valid amount greater than $0.');
+        amountInput.classList.add('border-rose-500');
+    } else {
+        amountInput.classList.remove('border-rose-500');
+    }
+
+    // Validate category
+    if (!categorySelect.value) {
+        errors.push('Please select a category for this expense.');
+        document.querySelector('.category-option').parentElement.classList.add('border-rose-500');
+    } else {
+        document.querySelector('.category-option').parentElement.classList.remove('border-rose-500');
+    }
+
+    // Validate name
+    const nameInput = document.querySelector('input[name="name"]');
+    if (!nameInput.value.trim()) {
+        errors.push('Please enter a name for this expense.');
+        nameInput.classList.add('border-rose-500');
+    } else {
+        nameInput.classList.remove('border-rose-500');
+    }
+
+    if (errors.length > 0) {
         e.preventDefault();
-        alert('Please enter a valid amount greater than 0.');
-        amountInput.focus();
+        alert('Please fix the following errors:\n\n' + errors.join('\n'));
         return false;
     }
+
+    // Handle "Add another" checkbox
+    const addAnother = document.getElementById('addAnother');
+    if (addAnother.checked) {
+        // Store form data and redirect to create new
+        // You might want to implement this differently based on your needs
+    }
+});
+</script>
+
+<!-- Custom template filter for dictionary access -->
+<script>
+// Since Django templates don't have a built-in get_item filter
+// We'll use this JavaScript workaround
+document.addEventListener('DOMContentLoaded', function() {
+    // No need for this since we're passing context directly
 });
 </script>
 {% endblock %}

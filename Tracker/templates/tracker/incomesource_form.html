@@ -246,6 +246,17 @@
                                 <span id="descCharCount" class="text-xs text-slate-500">0/1000</span>
                             </div>
                         </div>
+
+                        <!-- status Field -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-align-left mr-2"></i>Got the bag
+                            </label>
+                            {% render_field form.got class="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-emerald-500" %}
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs text-slate-500">Mark as Received</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Quick Actions -->

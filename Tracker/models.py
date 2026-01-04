@@ -31,6 +31,7 @@ class IncomeSource(models.Model):
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField(default=timezone.now)
     worth = models.FloatField(default=0)
+    got = models.BooleanField(default=False)
     description = models.TextField(default="")
 
     def __str__(self):
@@ -48,11 +49,19 @@ class Income(models.Model):
         return f"{self.amount} - {self.wallet}"
 
 class Expenses(models.Model):
+    CATEGORY_CHOICES = [
+        ('BUSINESS', 'Business'),
+        ('PERSONAL', 'Personal'),
+        ('INVESTMENT', 'Investment'),
+        ('FOOD', 'Food'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=100, default="")
     worth = models.FloatField(default=0)
     description = models.TextField(default="")
     date = models.DateTimeField(default=timezone.now)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='OTHER')
 
     def __str__(self):
         return self.name

@@ -47,7 +47,7 @@
                 </div>
                 <div>
                     <p class="text-slate-400 text-sm">This Month</p>
-                    <h3 class="text-2xl font-bold text-violet-400">${{ month_expenses|default:"0"|floatformat:2 }}</h3>
+                    <h3 class="text-2xl font-bold text-violet-400">${{ monthly_expenses|default:"0"|floatformat:2 }}</h3>
                 </div>
             </div>
         </div>
@@ -70,7 +70,7 @@
                     <i class="fas fa-bullseye text-emerald-400 text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-slate-400 text-sm">Budget</p>
+                    <p class="text-slate-400 text-sm">Monthly Budget</p>
                     <h3 class="text-2xl font-bold text-emerald-400">${{ budget|default:"2000"|floatformat:2 }}</h3>
                 </div>
             </div>
@@ -86,13 +86,74 @@
                 <option>Business</option>
                 <option>Personal</option>
                 <option>Investment</option>
-                <option>Other</option>
+                <option>Food</option>
             </select>
             <input type="date" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
             <input type="date" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
             <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">
                 Apply Filters
             </button>
+        </div>
+    </div>
+
+        <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Expense Trends Chart -->
+        <div class="card p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold">Expense Trends</h3>
+                    <p class="text-sm text-slate-400">Last 6 months spending</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                        <i class="fas fa-chart-line mr-1"></i> Trends
+                    </span>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Distribution Chart -->
+        <div class="card p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold">Category Distribution</h3>
+                    <p class="text-sm text-slate-400">Spending by category</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 bg-violet-900/30 text-violet-400 rounded-full text-sm">
+                        <i class="fas fa-chart-pie mr-1"></i> Distribution
+                    </span>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="categoryChart"></canvas>
+            </div>
+            <div class="mt-6 grid grid-cols-2 gap-4">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-rose-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-slate-400">Business:</span>
+                    <span class="ml-auto font-medium">${{ business_total|default:"0"|floatformat:2 }}</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-slate-400">Personal:</span>
+                    <span class="ml-auto font-medium">${{ personal_total|default:"0"|floatformat:2 }}</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-emerald-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-slate-400">Investment:</span>
+                    <span class="ml-auto font-medium">${{ investment_total|default:"0"|floatformat:2 }}</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-slate-400">Food:</span>
+                    <span class="ml-auto font-medium">${{ food_total|default:"0"|floatformat:2 }}</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -129,12 +190,12 @@
                             </div>
                         </td>
                         <td class="py-4 px-6">
-                            {% with category=expense.name|lower %}
+                            {% with category=expense.category|lower %}
                             <span class="px-3 py-1 {% if 'business' in category %}bg-blue-900/30 text-blue-400{% elif 'personal' in category %}bg-purple-900/30 text-purple-400{% elif 'investment' in category %}bg-emerald-900/30 text-emerald-400{% else %}bg-slate-800 text-slate-400{% endif %} rounded-full text-sm">
                                 {% if 'business' in category %}Business
                                 {% elif 'personal' in category %}Personal
                                 {% elif 'investment' in category %}Investment
-                                {% else %}Other{% endif %}
+                                {% else %}Food{% endif %}
                             </span>
                             {% endwith %}
                         </td>
@@ -223,6 +284,129 @@ document.addEventListener('DOMContentLoaded', function() {
         const selected = Array.from(itemCheckboxes).filter(cb => cb.checked).length;
         selectedCount.textContent = selected;
     }
+
+    // Initialize Trends Chart
+    const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+    const trendsChart = new Chart(trendsCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_months|safe }},
+            datasets: [{
+                label: 'Monthly Expenses',
+                data: {{ chart_monthly_totals }},
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#10b981',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#cbd5e1',
+                    borderColor: '#475569',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return `$${context.parsed.y.toFixed(2)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#94a3b8'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Initialize Category Distribution Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ chart_categories|safe }},
+            datasets: [{
+                data: {{ chart_category_data }},
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.8)',    // Red for Business
+                    'rgba(59, 130, 246, 0.8)',   // Blue for Personal
+                    'rgba(16, 185, 129, 0.8)',   // Green for Investment
+                    'rgba(245, 158, 11, 0.8)'    // Amber for Food
+                ],
+                borderColor: [
+                    'rgba(239, 68, 68, 1)',
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(16, 185, 129, 1)',
+                    'rgba(245, 158, 11, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#cbd5e1',
+                    borderColor: '#475569',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Resize charts on window resize
+    window.addEventListener('resize', function() {
+        trendsChart.resize();
+        categoryChart.resize();
+    });
 });
 </script>
 {% endblock %}

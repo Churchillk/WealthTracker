@@ -13,7 +13,7 @@ class CustomUserCreationForm(UserCreationForm):
 class IncomeSourceForm(forms.ModelForm):
     class Meta:
         model = IncomeSource
-        fields = ['name', 'client', 'start_date', 'end_date', 'worth', 'description']
+        fields = ['name', 'client', 'start_date', 'end_date', 'worth', 'got', 'description']
         widgets = {
             'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
@@ -32,11 +32,39 @@ class IncomeForm(forms.ModelForm):
 class ExpensesForm(forms.ModelForm):
     class Meta:
         model = Expenses
-        fields = ['name', 'worth', 'description', 'date']
+        fields = ['name', 'worth', 'description', 'date', 'category']
         widgets = {
-            'date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'date': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'class': 'form-control bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent'
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 4,
+                'class': 'form-control bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent',
+                'placeholder': 'Add any notes about this expense...'
+            }),
+            'name': forms.TextInput(attrs={
+                'class': 'form-control bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent',
+                'placeholder': 'e.g., Groceries, Rent, Utilities'
+            }),
+            'worth': forms.NumberInput(attrs={
+                'class': 'form-control bg-slate-800 border border-slate-700 rounded-lg px-10 py-3 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent',
+                'step': '0.01',
+                'min': '0'
+            }),
+            'category': forms.Select(attrs={
+                'class': 'hidden',  # We'll use custom buttons instead
+                'id': 'categorySelect'
+            })
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Add currency symbol to worth field
+        self.fields['worth'].widget.attrs.update({
+            'placeholder': '0.00'
+        })
 
 class NowNextForm(forms.ModelForm):
     class Meta:

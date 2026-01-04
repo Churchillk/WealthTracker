@@ -47,7 +47,7 @@
                 </div>
                 <div>
                     <p class="text-slate-400 text-sm">Active Clients</p>
-                    <h3 class="text-2xl font-bold text-violet-400">{{ active_clients|default:"0" }}</h3>
+                    <h3 class="text-2xl font-bold text-violet-400">{{ clients|default:"0" }}</h3>
                 </div>
             </div>
         </div>
@@ -58,8 +58,8 @@
                     <i class="fas fa-stream text-amber-400 text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-slate-400 text-sm">Active Sources</p>
-                    <h3 class="text-2xl font-bold text-amber-400">{{ active_sources|default:"0" }}</h3>
+                    <p class="text-slate-400 text-sm">Salary</p>
+                    <h3 class="text-2xl font-bold text-amber-400">{{ salary|default:"0" }}</h3>
                 </div>
             </div>
         </div>
@@ -201,13 +201,13 @@
                             <span class="font-bold text-emerald-400">${{ source.worth }}</span>
                         </td>
                         <td class="py-4 px-6">
-                            {% if source.end_date > now %}
+                            {% if source.got %}
                             <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
-                                <i class="fas fa-check-circle mr-1"></i> Active
+                                <i class="fas fa-check-circle mr-1"></i> Bagged
                             </span>
                             {% else %}
                             <span class="px-3 py-1 bg-rose-900/30 text-rose-400 rounded-full text-sm">
-                                <i class="fas fa-times-circle mr-1"></i> Ended
+                                <i class="fas fa-times-circle mr-1"></i> Active
                             </span>
                             {% endif %}
                         </td>
