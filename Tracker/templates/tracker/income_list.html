@@ -57,6 +57,67 @@
         </div>
     </div>
 
+        <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Income Trends Line Chart -->
+        <div class="card p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold">Income Trends</h3>
+                    <p class="text-sm text-slate-400">Last 6 months overview</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm">
+                        <i class="fas fa-chart-line mr-1"></i> Trends
+                    </span>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="trendsChart"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-4">
+                <div class="p-3 bg-slate-800/30 rounded-lg">
+                    <p class="text-xs text-slate-400">Current Month</p>
+                    <p class="font-medium text-emerald-400">${{ month_income|default:"0"|floatformat:2 }}</p>
+                </div>
+                <div class="p-3 bg-slate-800/30 rounded-lg">
+                    <p class="text-xs text-slate-400">Monthly Avg</p>
+                    <p class="font-medium text-violet-400">${{ avg_income|default:"0"|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Income Sources Bar Chart -->
+        <div class="card p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold">Income by Source</h3>
+                    <p class="text-sm text-slate-400">Top income sources</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 bg-violet-900/30 text-violet-400 rounded-full text-sm">
+                        <i class="fas fa-chart-bar mr-1"></i> Sources
+                    </span>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="sourcesChart"></canvas>
+            </div>
+            <div class="mt-4 p-3 bg-emerald-900/10 border border-emerald-900/20 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-400">Top Source</p>
+                        <p class="font-medium">{{ top_source_name }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold text-emerald-400">${{ top_source_amount|floatformat:2 }}</p>
+                        <p class="text-xs text-slate-400">{{ total_sources }} sources total</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Income Table -->
     <div class="card rounded-xl overflow-hidden">
         <div class="table-container">
@@ -146,4 +207,238 @@
         {% endif %}
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Income Trends Chart (Line Chart)
+    const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+    const trendsChart = new Chart(trendsCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_months|safe }},
+            datasets: [{
+                label: 'Monthly Income',
+                data: {{ chart_monthly_totals }},
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#10b981',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#cbd5e1',
+                    borderColor: '#475569',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `$${context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            size: 11
+                        },
+                        callback: function(value) {
+                            return '$' + value.toLocaleString('en-US');
+                        }
+                    },
+                    beginAtZero: true
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+
+    // Initialize Income Sources Chart (Bar Chart)
+    const sourcesCtx = document.getElementById('sourcesChart').getContext('2d');
+    const sourcesChart = new Chart(sourcesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_source_names|safe }},
+            datasets: [{
+                label: 'Total Income',
+                data: {{ chart_source_amounts }},
+                backgroundColor: {{ chart_source_colors|safe }},
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 1,
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#cbd5e1',
+                    borderColor: '#475569',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return [
+                                `$${value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+                                `${percentage}% of total`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 45
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            size: 11
+                        },
+                        callback: function(value) {
+                            return '$' + value.toLocaleString('en-US');
+                        }
+                    },
+                    beginAtZero: true
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+
+    // Resize charts on window resize
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            trendsChart.resize();
+            sourcesChart.resize();
+        }, 250);
+    });
+
+    // Add animation to stats cards
+    const statsCards = document.querySelectorAll('.stat-card');
+    statsCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+
+<!-- Add some CSS for chart responsiveness -->
+<style>
+.chart-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Make sure charts are responsive */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    #trendsChart, #sourcesChart {
+        max-height: 250px;
+    }
+}
+
+/* Chart tooltip customization */
+.chartjs-tooltip {
+    border-radius: 8px !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Animation for chart loading */
+@keyframes chartFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#trendsChart, #sourcesChart {
+    animation: chartFadeIn 0.8s ease-out;
+}
+</style>
+{% endblock %}
+
 {% endblock %}

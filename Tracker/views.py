@@ -17,7 +17,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import *
 from .forms import *
-from django.db.models import Q
+from django.db.models import Sum, Avg, Count, functions, Q
 from django.contrib import messages
 import json
 
@@ -97,12 +97,14 @@ class IncomeSourceListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         total_worth = self.get_queryset().aggregate(Sum('worth'))['worth__sum'] or 0
         salary = IncomeSource.objects.filter(user=self.request.user, client="Monopoly").aggregate(Sum('worth'))['worth__sum'] or 0
-        unique_clients = IncomeSource.objects.filter(user=self.request.user).values('client').distinct().count()
+        unique_clients = IncomeSource.objects.filter(user=self.request.user).values('client').exclude(client="Monopoly").distinct().count()
+        bagged = IncomeSource.objects.filter(user=self.request.user, got=True).aggregate(Sum('worth'))['worth__sum'] or 0
         print("------------------------->", total_worth)
         context.update({
             'salary': salary,
             'clients': unique_clients,
             'total_worth': total_worth,
+            'bagged': bagged
         })
         return context
 
@@ -146,6 +148,109 @@ class IncomeListView(LoginRequiredMixin, ListView):
         total_income = Income.objects.filter(user=self.request.user).aggregate(Sum('amount'))['amount__sum'] or 0
         context = super().get_context_data(**kwargs)
         context['total_income'] = total_income
+        user_incomes = Income.objects.filter(user=self.request.user)
+
+        # Total income
+        total_income = user_incomes.aggregate(Sum('amount'))['amount__sum'] or 0
+
+        # Monthly income
+        now = timezone.now()
+        month_income = user_incomes.filter(
+            date__year=now.year,
+            date__month=now.month
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+
+        # Average monthly income
+        # Get income grouped by month
+        monthly_income_data = user_incomes.annotate(
+            month=functions.TruncMonth('date')
+        ).values('month').annotate(
+            monthly_total=Sum('amount')
+        ).order_by('month')
+
+        if monthly_income_data:
+            avg_income = sum(item['monthly_total'] for item in monthly_income_data) / len(monthly_income_data)
+        else:
+            avg_income = 0
+
+        # Data for Line Chart - Income Trends (Last 6 months)
+        six_months_ago = timezone.now() - timedelta(days=180)
+        recent_income = user_incomes.filter(
+            date__gte=six_months_ago
+        ).annotate(
+            month=functions.TruncMonth('date')
+        ).values('month').annotate(
+            total=Sum('amount')
+        ).order_by('month')
+
+        # Prepare line chart data
+        months = []
+        monthly_totals = []
+        for income in recent_income:
+            months.append(income['month'].strftime('%b %Y'))
+            monthly_totals.append(float(income['total']))
+
+        # If no data in recent 6 months, create empty arrays
+        if not months:
+            # Create empty data for last 6 months
+            for i in range(5, -1, -1):
+                month_date = timezone.now() - timedelta(days=30*i)
+                months.append(month_date.strftime('%b %Y'))
+                monthly_totals.append(0)
+
+        # Data for Bar Chart - Income by Source
+        income_by_source = user_incomes.values('source__name').annotate(
+            total_amount=Sum('amount'),
+            count=Count('id')
+        ).order_by('-total_amount')[:8]  # Top 8 sources
+
+        # Prepare bar chart data
+        source_names = []
+        source_amounts = []
+        source_colors = []
+
+        # Color palette for sources
+        colors = [
+            'rgba(16, 185, 129, 0.8)',   # emerald
+            'rgba(59, 130, 246, 0.8)',   # blue
+            'rgba(168, 85, 247, 0.8)',   # violet
+            'rgba(245, 158, 11, 0.8)',   # amber
+            'rgba(239, 68, 68, 0.8)',    # rose
+            'rgba(6, 182, 212, 0.8)',    # cyan
+            'rgba(139, 92, 246, 0.8)',   # purple
+            'rgba(251, 191, 36, 0.8)'    # yellow
+        ]
+
+        for i, source in enumerate(income_by_source):
+            source_names.append(source['source__name'] or 'Direct')
+            source_amounts.append(float(source['total_amount']))
+            source_colors.append(colors[i % len(colors)])
+
+        # If no sources, create some default data
+        if not source_names:
+            source_names = ['No data']
+            source_amounts = [0]
+            source_colors = ['rgba(148, 163, 184, 0.8)']
+
+        # Top income source
+        top_source = income_by_source.first()
+        top_source_name = top_source['source__name'] if top_source else 'No data'
+        top_source_amount = float(top_source['total_amount']) if top_source else 0
+
+        context.update({
+            'total_income': total_income,
+            'month_income': month_income,
+            'avg_income': avg_income,
+            'chart_months': months,
+            'chart_monthly_totals': monthly_totals,
+            'chart_source_names': source_names,
+            'chart_source_amounts': source_amounts,
+            'chart_source_colors': source_colors,
+            'top_source_name': top_source_name,
+            'top_source_amount': top_source_amount,
+            'total_sources': len(source_names),
+            'income_count': user_incomes.count(),
+        })
         return context
 
 class IncomeCreateView(LoginRequiredMixin, CreateView):
