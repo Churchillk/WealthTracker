@@ -8,7 +8,50 @@ admin.site.register(EmergencyFunds)
 admin.site.register(IncomeGoal)
 admin.site.register(IncomeSource)
 admin.site.register(Income)
-admin.site.register(Expenses)
+
+@admin.register(Expenses)
+class ExpensesAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "user",
+        "category",
+        "worth",
+        "date",
+    )
+
+    list_filter = (
+        "category",
+        "user",
+        "date",
+    )
+
+    search_fields = (
+        "name",
+        "description",
+        "user__username",
+        "user__email",
+    )
+
+    ordering = ("-date",)
+
+    date_hierarchy = "date"
+
+    list_per_page = 25
+
+    autocomplete_fields = ("user",)
+
+    fieldsets = (
+        ("Basic Info", {
+            "fields": ("user", "name", "category", "worth"),
+        }),
+        ("Details", {
+            "fields": ("description",),
+        }),
+        ("Metadata", {
+            "fields": ("date",),
+        }),
+    )
+    
 admin.site.register(NowNext)
 admin.site.register(Projects)
 admin.site.register(Goals)
